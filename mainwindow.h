@@ -30,11 +30,14 @@ public:
     void readCsvFile(const QString &filePath);
     void ConfigLog();
 
-
 private:
     void UIcontrolEnable(bool flag);
     bool validateCsvFile(const QString& filePath);
     void refreshSerialPort();
+    void loadCheckBoxStateFromJson(); // 新增：从配置文件读取勾选状态
+
+    void loadUiConfigFromJson();   // 读取配置文件并加载控件值
+    void saveUiConfigToJson();     // 保存控件值到配置文件
 
 signals:
 
@@ -76,8 +79,9 @@ private:
     QVector<CsvDataRow> dataLEDPara; //光强，DAC配置文件
     QVector<CsvDataRow> tempLEDdata; //当前循环的光强循环区间
 
-    unsigned short m_RegisterA; // 移位寄存器A（位号6~15有效）
-    unsigned short m_RegisterB; // 移位寄存器B（位号6~15有效）
+    ModeBLSample m_BLmode; //采集基线的类型
+    unsigned short m_RegisterA = 0; // 移位寄存器A（位号6~15有效）
+    unsigned short m_RegisterB = 0; // 移位寄存器B（位号6~15有效）
     QList<QCheckBox*> m_checksA; // 存储勾选框指针，便于批量操作
     QList<QCheckBox*> m_checksB; // 存储勾选框指针，便于批量操作
     QList<int> m_bitMap; // 位号映射表：索引对应check1~check10，值为对应位号

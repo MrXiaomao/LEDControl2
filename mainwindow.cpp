@@ -1,3 +1,10 @@
+/*
+ * @Author: MrPan
+ * @Date: 2025-10-26 10:14:52
+ * @LastEditors: Maoxiaoqing
+ * @LastEditTime: 2025-10-30 23:01:21
+ * @Description: 请填写简介
+ */
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
@@ -97,12 +104,18 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->checkB_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllBChanged);
 
     ConfigLog();
+
+    // loadCheckBoxStateFromJson();
+    loadUiConfigFromJson();
 }
 
 MainWindow::~MainWindow()
 {
     //退出时关闭串口
     commManager->close();
+
+    //将界面参数保存到json文件中
+    saveUiConfigToJson();
 
     // 1️⃣ 从 logger 移除自定义附加器（防止退出时再触发 append）
     logger->debug("软件正常退出！");
@@ -206,6 +219,156 @@ void MainWindow::ConfigLog()
     connect(uiAppender, &UiLogAppender::logToUi, this, &MainWindow::onLogMessage, Qt::QueuedConnection);
 
     logger->info("程序启动");
+}
+
+void MainWindow::loadCheckBoxStateFromJson()
+{
+    QJsonObject json = CommonUtils::ReadSetting();
+    QJsonObject uiJson = json.value("UI").toObject();
+
+    if (uiJson.isEmpty()) {
+        logger->warn("读取\"checkValueA\"，配置文件中缺少 UI 节点");
+    }
+
+    int checkValueA = uiJson.value("checkValueA").toInt(0);
+    int checkValueB = uiJson.value("checkValueB").toInt(0);
+
+    logger->info(QString("从配置文件加载勾选状态: checkValueA=%1, checkValueB=%2")\
+                     .arg(checkValueA).arg(checkValueB));
+
+    // === 更新 A 组 ===
+    for (int i = 0; i < m_checksA.size(); ++i) {
+        int bitPos = m_bitMap[i];
+        bool isChecked = (checkValueA >> bitPos) & 0x01;
+
+        // 避免触发 onCheckStateChangedA 的信号递归
+        disconnect(m_checksA[i], &QCheckBox::stateChanged, this, &MainWindow::onCheckStateChangedA);
+        m_checksA[i]->setChecked(isChecked);
+        connect(m_checksA[i], &QCheckBox::stateChanged, this, &MainWindow::onCheckStateChangedA);
+    }
+
+    // === 更新 B 组 ===
+    for (int i = 0; i < m_checksB.size(); ++i) {
+        int bitPos = m_bitMap[i];
+        bool isChecked = (checkValueB >> bitPos) & 0x01;
+
+        disconnect(m_checksB[i], &QCheckBox::stateChanged, this, &MainWindow::onCheckStateChangedB);
+        m_checksB[i]->setChecked(isChecked);
+        connect(m_checksB[i], &QCheckBox::stateChanged, this, &MainWindow::onCheckStateChangedB);
+    }
+
+    // === 更新寄存器缓存值 ===
+    m_RegisterA = checkValueA;
+    m_RegisterB = checkValueB;
+
+    // === 更新“全选”勾选框状态 ===
+    bool allA = std::all_of(m_checksA.begin(), m_checksA.end(),
+                            [](QCheckBox *c){ return c->isChecked(); });
+    bool allB = std::all_of(m_checksB.begin(), m_checksB.end(),
+                            [](QCheckBox *c){ return c->isChecked(); });
+
+    ui->checkA_all->setChecked(allA);
+    ui->checkB_all->setChecked(allB);
+
+    logger->info("界面勾选状态加载完成。");
+}
+
+void MainWindow::loadUiConfigFromJson()
+{
+    QJsonObject json = CommonUtils::ReadSetting();
+    QJsonObject uiJson = json.value("UI").toObject();
+
+    if (uiJson.isEmpty()) {
+        logger->warn("配置文件中缺少 UI 节点");
+        return;
+    }
+
+    // === 整数控件 ===
+    ui->spinBox_LEDWidth->setValue(uiJson.value("LEDWidth").toInt(10));
+    ui->spinBox_lightDelayTime->setValue(uiJson.value("LightDelayTime").toInt(1000));
+    ui->spinBox_TriggerDelayTime->setValue(uiJson.value("TriggerDelayTime").toInt(1000));
+    ui->spinBox_timesLED->setValue(uiJson.value("timesLED").toInt(1000));
+
+    // === 浮点控件 ===
+    ui->doubleSpinBox_loopStart->setValue(uiJson.value("IntensityLeft").toDouble(10.0));
+    ui->doubleSpinBox_loopEnd->setValue(uiJson.value("IntensityRight").toDouble(200.0));
+
+    // === 勾选框控件 ===
+    int checkValueA = uiJson.value("checkValueA").toInt(0);
+    int checkValueB = uiJson.value("checkValueB").toInt(0);
+
+    // === 更新 A 组 ===
+    for (int i = 0; i < m_checksA.size(); ++i) {
+        int bitPos = m_bitMap[i];
+        bool isChecked = (checkValueA >> bitPos) & 0x01;
+
+        // 避免触发 onCheckStateChangedA 的信号递归
+        disconnect(m_checksA[i], &QCheckBox::stateChanged, this, &MainWindow::onCheckStateChangedA);
+        m_checksA[i]->setChecked(isChecked);
+        connect(m_checksA[i], &QCheckBox::stateChanged, this, &MainWindow::onCheckStateChangedA);
+    }
+
+    // === 更新 B 组 ===
+    for (int i = 0; i < m_checksB.size(); ++i) {
+        int bitPos = m_bitMap[i];
+        bool isChecked = (checkValueB >> bitPos) & 0x01;
+
+        disconnect(m_checksB[i], &QCheckBox::stateChanged, this, &MainWindow::onCheckStateChangedB);
+        m_checksB[i]->setChecked(isChecked);
+        connect(m_checksB[i], &QCheckBox::stateChanged, this, &MainWindow::onCheckStateChangedB);
+    }
+
+    // === 更新寄存器缓存值 ===
+    m_RegisterA = checkValueA;
+    m_RegisterB = checkValueB;
+
+    // === 更新“全选”勾选框状态 ===
+    bool allA = std::all_of(m_checksA.begin(), m_checksA.end(),
+                            [](QCheckBox *c){ return c->isChecked(); });
+    bool allB = std::all_of(m_checksB.begin(), m_checksB.end(),
+                            [](QCheckBox *c){ return c->isChecked(); });
+
+    ui->checkA_all->setChecked(allA);
+    ui->checkB_all->setChecked(allB);
+
+    // === 基线采集模式控件 ===
+    int modeBL = uiJson.value("BLSample_mode").toInt(0);
+    m_BLmode = modeBL==0?ManualBL:AutoBL;
+    ui->radioButton_auto->setChecked(m_BLmode==AutoBL);
+
+    // === 文件选择 ===
+    QString fileName = uiJson.value("loop_file").toString("");
+    ui->lEdit_File->setText(fileName);
+    if (validateCsvFile(fileName)){
+        ui->lEdit_File->setStyleSheet("QLineEdit { color: green; }");
+        readCsvFile(fileName);
+    }
+
+    logger->info("界面参数已从配置文件加载。");
+}
+
+void MainWindow::saveUiConfigToJson()
+{
+    QJsonObject json = CommonUtils::ReadSetting();
+    QJsonObject uiJson = json.value("UI").toObject();
+
+    uiJson["LEDWidth"]          = ui->spinBox_LEDWidth->value();
+    uiJson["LightDelayTime"]    = ui->spinBox_lightDelayTime->value();
+    uiJson["TriggerDelayTime"]  = ui->spinBox_TriggerDelayTime->value();
+    uiJson["timesLED"]          = ui->spinBox_timesLED->value();
+    uiJson["IntensityLeft"]     = ui->doubleSpinBox_loopStart->value();
+    uiJson["IntensityRight"]    = ui->doubleSpinBox_loopEnd->value();
+    uiJson["loop_file"]         = ui->lEdit_File->text();
+    uiJson["BLSample_mode"]     = ui->radioButton_auto->isChecked();
+
+    // 同时保存勾选框状态
+    uiJson["checkValueA"] = m_RegisterA;
+    uiJson["checkValueB"] = m_RegisterB;
+
+    json["UI"] = uiJson;
+    CommonUtils::WriteSetting(json);
+
+    logger->info("界面参数已保存到配置文件。");
 }
 
 void MainWindow::OnUpdateReceive(QString str)
@@ -516,8 +679,7 @@ void MainWindow::on_bt_startLoop_clicked()
             return;
         }
         logger->info(QString("循环的光强区间：%1~%2").arg(intensityLeft).arg(intensityRight));
-        bool isAutoMode = ui->radioButton_auto->isChecked();
-        commManager->setConfigBeforeLoop(config, isAutoMode);
+        commManager->setConfigBeforeLoop(config, m_BLmode);
     }
     else{ //停止测量
         commManager->stopMeasure();
@@ -545,14 +707,18 @@ void MainWindow::onCheckStateChangedA(int state) {
     if (isChecked) {
         // 置位：m_value |= (1 << 位号)
         m_RegisterA |= (1 << bitPos);
+
+        // 调试输出（二进制显示16位，方便观察位变化）
+        logger->info(QString("勾选A组/编号%1,当前值：0x%2,二进制：%3").arg(index)\
+                        .arg(QString::number(m_RegisterA, 16).toUpper())\
+                        .arg(QString::number(m_RegisterA, 2).rightJustified(16, '0')));
     } else {
         // 清位：m_value &= ~(1 << 位号)
         m_RegisterA &= ~(1 << bitPos);
+        logger->info(QString("取消勾选A组/编号%1,当前值：0x%2,二进制：%3").arg(index)\
+                        .arg(QString::number(m_RegisterA, 16).toUpper())\
+                        .arg(QString::number(m_RegisterA, 2).rightJustified(16, '0')));
     }
-
-    // 调试输出（二进制显示16位，方便观察位变化）
-    qDebug() << "当前值：0x" << QString::number(m_RegisterA, 16).toUpper()
-             << "二进制：" << QString::number(m_RegisterA, 2).rightJustified(16, '0');
 
     // 新增逻辑：检查所有子选项是否全选，更新checkA_all状态
     bool allChecked = true;
@@ -593,10 +759,6 @@ void MainWindow::onCheckStateChangedB(int state) {
         m_RegisterB &= ~(1 << bitPos);
     }
 
-    // 调试输出（二进制显示16位，方便观察位变化）
-    qDebug() << "当前值：0x" << QString::number(m_RegisterB, 16).toUpper()
-             << "二进制：" << QString::number(m_RegisterB, 2).rightJustified(16, '0');
-
     // 新增逻辑：检查所有子选项是否全选，更新checkA_all状态
     bool allChecked = true;
     foreach (QCheckBox *check, m_checksB) {
@@ -606,6 +768,18 @@ void MainWindow::onCheckStateChangedB(int state) {
         }
     }
 
+    //打印更新日志
+    if (state == Qt::Checked) {
+        logger->info(QString("勾选B组/编号%1,当前值：0x%2,二进制：%3").arg(index)\
+                        .arg(QString::number(m_RegisterB, 16).toUpper())\
+                        .arg(QString::number(m_RegisterB, 2).rightJustified(16, '0')));
+    }
+    else
+    {
+        logger->info(QString("取消勾选B组/编号%1,当前值：0x%2,二进制：%3").arg(index)\
+                        .arg(QString::number(m_RegisterB, 16).toUpper())\
+                        .arg(QString::number(m_RegisterB, 2).rightJustified(16, '0')));
+    }
     // 避免信号递归触发，先断开连接再更新状态
     disconnect(ui->checkB_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllBChanged);
     ui->checkB_all->setChecked(allChecked);
@@ -644,6 +818,18 @@ void MainWindow::onCheckAllAChanged(int state)
         }
     }
 
+    //打印更新日志
+    if (state == Qt::Checked) {
+        logger->info(QString("勾选A组所有编号,当前值：0x%1,二进制：%2")\
+                         .arg(QString::number(m_RegisterA, 16).toUpper())\
+                         .arg(QString::number(m_RegisterA, 2).rightJustified(16, '0')));
+    }
+    else
+    {
+        logger->info(QString("取消勾选A组所有编号,当前值：0x%1,二进制：%2")\
+                         .arg(QString::number(m_RegisterA, 16).toUpper())\
+                         .arg(QString::number(m_RegisterA, 2).rightJustified(16, '0')));
+    }
     // 处理checkA1~checkA10单独勾选时对checkA_all的影响（当所有子项都勾选时，checkA_all应自动勾选）
     // 检查所有checkA1~checkA10是否都被勾选
     bool allChecked = true;
@@ -671,11 +857,17 @@ void MainWindow::onCheckAllBChanged(int state)
         // 全选：勾选所有checkB1~checkB10
         foreach (QCheckBox *check, m_checksB) {
             check->setChecked(true);
+            logger->info(QString("勾选B组所有编号,当前值：0x%1,二进制：%2")\
+                        .arg(QString::number(m_RegisterB, 16).toUpper())\
+                        .arg(QString::number(m_RegisterB, 2).rightJustified(16, '0')));
         }
     } else {
         // 取消全选：取消所有checkB1~checkB10的勾选
         foreach (QCheckBox *check, m_checksB) {
             check->setChecked(false);
+            logger->info(QString("取消勾选B组所有编号,当前值：0x%1,二进制：%2")\
+                        .arg(QString::number(m_RegisterB, 16).toUpper())\
+                        .arg(QString::number(m_RegisterB, 2).rightJustified(16, '0')));
         }
     }
 
@@ -716,9 +908,11 @@ void MainWindow::onBLmodeToggled(bool checked)
         if (senderRadio == ui->radioButton_auto) {
             logger->info("设置基线采集模式：自动");
             ui->bt_baseLineSample->setEnabled(false);
+            m_BLmode = AutoBL;
         } else if (senderRadio == ui->radioButton_manual) {
             logger->info("设置基线采集模式：手动");
             ui->bt_baseLineSample->setEnabled(true);
+            m_BLmode = ManualBL;
         }
     }
 }

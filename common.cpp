@@ -80,3 +80,33 @@ CommonUtils::UserConfig CommonUtils::loadUserConfig()
 
     return config;
 }
+
+unsigned short CommonUtils::loadJson_heckValueA()
+{
+    unsigned short value = 1;
+    QJsonObject json = CommonUtils::ReadSetting();
+    QJsonObject uiJson = json.value("UI").toObject();
+
+    if (uiJson.isEmpty()) {
+        qCritical()<<"Setin.jon配置文件中缺少 UI 节点";
+        return value;
+    }
+    int checkValue = uiJson.value("checkValueA").toInt(1);
+    value = static_cast<unsigned short>(checkValue);
+    return value;
+}
+
+unsigned short CommonUtils::loadJson_heckValueB()
+{
+    unsigned short value = 1;
+    QJsonObject json = CommonUtils::ReadSetting();
+    QJsonObject uiJson = json.value("UI").toObject();
+
+    if (uiJson.isEmpty()) {
+        qCritical()<<"Setin.jon配置文件中缺少 UI 节点";
+        return value;
+    }
+    int checkValue = uiJson.value("checkValueB").toInt(1);
+    value = static_cast<unsigned short>(checkValue);
+    return value;
+}

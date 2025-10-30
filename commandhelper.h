@@ -45,7 +45,7 @@ public:
     void ressetFPGA();
 
     //进行循环前配置,是否自动采集基线
-    void setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, bool isBLSample);
+    void setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeBLSample mode_BLsample);
 
     //进行一次测量
     void startOneLoop(CsvDataRow data);
@@ -118,7 +118,7 @@ private:
     bool taskFinished = false;
     QMutex mutexCache;
     WorkStatusFlag workStatus = NoWork;
-    bool m_isBLSample; //是否自动采集基线
+    ModeBLSample m_modeBLSample; //是否自动采集基线
 };
 
 #endif // COMMANDHELPER_H

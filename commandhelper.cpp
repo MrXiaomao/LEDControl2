@@ -119,9 +119,9 @@ void CommandHelper::baseLineSample_manual()
     logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
 }
 
-void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, bool isBLSample)
+void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeBLSample mode_BLsample)
 {
-    m_isBLSample = isBLSample;
+    m_modeBLSample = mode_BLsample;
     cmdPool.clear();
 
     cmdPool.push_back(Order::cmd_closeHardTrigger);
@@ -185,7 +185,7 @@ void CommandHelper::resetFPGA_afterMeasure()
     cmdPool.push_back(Order::cmd_closeHardTrigger);
     cmdPool.push_back(Order::cmd_resetFPGA);
 
-    if(m_isBLSample){
+    if(m_modeBLSample == AutoBL){
         cmdPool.push_back(Order::cmd_openBLSamlpe); //开启基线采集
         workStatus = BLSampleing_auto;
     }

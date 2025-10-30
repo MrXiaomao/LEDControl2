@@ -13,7 +13,7 @@
 		"timesLED":1000,
 		"checkValueA":1023,
 		"checkValueB":1023,
-		"LED_ConfigFile":"C:\Users\DELL\Desktop\QT_Study\LEDControl2",
+		"loop_file":"C:\Users\DELL\Desktop\QT_Study\LEDControl2",
 		"IntensityLeft":10.0,
 		"IntensityRight":200.0,
 		"BaseLineSampleMode":"auto"

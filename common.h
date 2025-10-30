@@ -11,6 +11,12 @@ struct CsvDataRow {
     int dacValues[10];    // 其他列：DAC值（int）
 };
 
+//采集基线的类型
+enum ModeBLSample {
+    ManualBL = 0, // 手动
+    AutoBL        // 自动
+};
+
 // 声明常用函数（工具函数）
 namespace CommonUtils {
     extern QString jsonPath;
@@ -36,6 +42,9 @@ namespace CommonUtils {
 
     //新增读取并校验函数读取"User"组数值。
     UserConfig loadUserConfig();
+
+    unsigned short loadJson_heckValueA();
+    unsigned short loadJson_heckValueB();
 }
 
 #endif // COMMON_H
