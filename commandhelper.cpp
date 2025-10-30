@@ -9,8 +9,14 @@ CommandHelper::CommandHelper(QObject *parent)
 {
     m_SerialPort.connectReadEvent(this);
 
-    qDebug() << QString::fromStdString(m_SerialPort.getVersion());
     connect(this, &CommandHelper::sigUpdateData, this, &CommandHelper::handleData);
+
+    // 初始化 Log4Qt 日志器
+    logger = Log4Qt::Logger::logger("CommandHelper");
+    logger->info("CommandHelper 初始化完成");
+
+    // 测试版本信息
+    logger->info(QString::fromStdString(m_SerialPort.getVersion()));
 }
 
 CommandHelper::~CommandHelper()
@@ -51,7 +57,7 @@ bool CommandHelper::init(const QString portName, int baudRate)
     else
     {
         QMessageBox::information(NULL,tr("information"),tr("open port error") + QString("\n\ncode: %1\nmessage: %2").arg(m_SerialPort.getLastError()).arg(m_SerialPort.getLastErrorMsg()));
-        qDebug()<< m_SerialPort.getLastError();
+        logger->fatal(QString("\n\ncode: %1\nmessage: %2").arg(m_SerialPort.getLastError()).arg(m_SerialPort.getLastErrorMsg()));
         return false;
     }
 }
@@ -70,7 +76,7 @@ void CommandHelper::send(QByteArray cmd)
     else
     {
         QMessageBox::information(NULL,tr("information"),tr("please open serial port first"));
-        qDebug() << tr("please open serial port first");
+        logger->fatal(tr("串口未连接, 请先连接串口后再发送数据。"));
     }
 }
 
@@ -87,7 +93,8 @@ void CommandHelper::ressetFPGA()
 
     workStatus = Preparing;
     send(cmdPool.first());
-    qDebug()<<"Send HEX: "<<cmdPool.first().toHex(' ');
+    logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
+
 }
 
 //采集基线
@@ -99,7 +106,7 @@ void CommandHelper::baseLineSample()
 
     workStatus = BLSampleing;
     send(cmdPool.first());
-    qDebug()<<"Send HEX: "<<cmdPool.first().toHex(' ');
+    logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
 }
 
 //进行一次测量
@@ -109,12 +116,12 @@ void CommandHelper::startOneLoop(CsvDataRow data)
 
     for(int i=0; i<10; i++)
     {
-        cmdPool.push_back(Order::getVoltConfig(i,data.dacValues.at(i)));
+        cmdPool.push_back(Order::getVoltConfig(i,data.dacValues[i]));
     }
 
     workStatus = Looping;
     send(cmdPool.first());
-    qDebug()<<"Send HEX: "<<cmdPool.first().toHex(' ');
+    logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
 }
 
 void CommandHelper::stopMeasure()
@@ -131,7 +138,7 @@ void CommandHelper::stopMeasure()
 
     workStatus = Stopping;
     send(cmdPool.first());
-    qDebug()<<"Send HEX: "<<cmdPool.first().toHex(' ');
+    logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
 }
 
 void CommandHelper::setCommonConfig(unsigned short width, unsigned short times, unsigned int delaytime)
@@ -144,22 +151,22 @@ void CommandHelper::setCommonConfig(unsigned short width, unsigned short times, 
 
     workStatus = Prepared;
     send(cmdPool.first());
-    qDebug()<<"Send HEX: "<<cmdPool.first().toHex(' ');
+    logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
 }
 
 void CommandHelper::startWork()
 {
     // 创建数据解析线程
     NetDataThread = new QLiteThread(this);
-    NetDataThread->setObjectName("analyzeNetDataThread");
-    NetDataThread->setWorkThreadProc([=](){
-        netFrameWorkThead();
-    });
+    // NetDataThread->setObjectName("analyzeNetDataThread");
+    // NetDataThread->setWorkThreadProc([=](){
+    //     netFrameWorkThead();
+    // });
 }
 
 void CommandHelper::handleData(QByteArray data)
 {
-    qDebug() << "Recv HEX: " << data.toHex(' ');
+    logger->debug(QString("Send HEX: %1").arg(QString(data.toHex(' '))));
 
     //测量温度
     if(workStatus==MeasuringTemp)
@@ -194,7 +201,7 @@ void CommandHelper::handleData(QByteArray data)
         if(cmdPool.size()>0){
             send(cmdPool.first());
         }
-        qDebug()<<"返回指令与发送指令不一致";
+        logger->debug(tr("返回指令与发送指令不一致"));
         return;
     }
 
@@ -203,7 +210,7 @@ void CommandHelper::handleData(QByteArray data)
     {
         //发送开始测量指令
         send(cmdPool.first());
-        qDebug()<<"Send HEX: "<<cmdPool.first().toHex(' ');
+        logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
     }
     else{
         switch(workStatus)
@@ -228,7 +235,7 @@ void CommandHelper::handleData(QByteArray data)
 #include <functional>
 void CommandHelper::netFrameWorkThead()
 {
-    qDebug() << "netFrameWorkThead thread id:" << QThread::currentThreadId();
+    // qDebug() << "netFrameWorkThead thread id:" << QThread::currentThreadId();
     // while (!taskFinished)
     // {
     //     {

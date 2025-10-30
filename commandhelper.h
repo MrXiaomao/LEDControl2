@@ -1,9 +1,17 @@
+/*
+ * @Author: MrPan
+ * @Date: 2025-10-26 17:03:54
+ * @LastEditors: Maoxiaoqing
+ * @LastEditTime: 2025-10-30 12:59:53
+ * @Description: 请填写简介
+ */
 #ifndef COMMANDHELPER_H
 #define COMMANDHELPER_H
 
 #include "qlitethread.h"
 #include <QMutex>
 #include "common.h"
+#include <log4qt/logger.h>
 
 #include <QObject>
 #include "CSerialPort/SerialPort.h"
@@ -77,6 +85,7 @@ private slots:
     void handleData(QByteArray data);
 
 signals:
+    void sigLog(const QString& message, const QString& type);
     void sigUpdateReceive(QString str);
     void sigUpdateData(QByteArray data);
 
@@ -86,6 +95,7 @@ signals:
     void sigFinishCurrentloop(); //当前循环结束
 
 private:
+    Log4Qt::Logger *logger;   // 日志
     CSerialPort m_SerialPort;
     QVector<QByteArray> cmdPool;
     QByteArray cachePool;

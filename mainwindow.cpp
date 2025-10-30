@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 
 // #include <QFile>
+#include <QDir>
 #include <QJsonDocument>
 #include <Qjsonarray>
 
@@ -10,6 +11,13 @@
 #include <QMessageBox>
 #include <QDebug>
 #include "order.h"
+
+#include <log4qt/logger.h>
+#include <log4qt/patternlayout.h>
+#include <log4qt/rollingfileappender.h>
+#include <log4qt/propertyconfigurator.h>
+#include <log4qt/logManager.h>
+#include "uilogappender.h"
 
 QString MainWindow::jsonPath = "./config/setting.json";
 
@@ -101,13 +109,12 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     ui->bt_startLoop->setEnabled(false);
+
     // 连接日志信号槽
-    connect(this, &MainWindow::sigLogMessage, this, &MainWindow::onLogMessage, Qt::QueuedConnection);
     connect(commManager, &CommandHelper::sigUpdateReceive, this, &MainWindow::OnUpdateReceive, Qt::QueuedConnection);
     connect(commManager, &CommandHelper::sigFPGA_prepared, this, &MainWindow::slot_FPGA_prepared, Qt::QueuedConnection);
     connect(commManager, &CommandHelper::sigFPGA_stoped, this, &MainWindow::slot_measureStoped, Qt::QueuedConnection);
     connect(commManager, &CommandHelper::sigFinishCurrentloop, this, &MainWindow::slot_finishedOneLoop, Qt::QueuedConnection);
-
 
     // 2. （可选）关联选中状态变化的信号（两个单选按钮可共用一个槽函数）
     connect(ui->radioButton_auto, &QRadioButton::toggled,this, &MainWindow::onBLmodeToggled);
@@ -115,16 +122,65 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->checkA_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllAChanged);
     connect(ui->checkB_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllBChanged);
+
+    ConFigLog();
 }
 
 MainWindow::~MainWindow()
 {
+    // 1️⃣ 从 logger 移除自定义附加器（防止退出时再触发 append）
+    if (logger && uiAppender) {
+        logger->removeAppender(uiAppender);
+        uiAppender->close();
+        delete uiAppender;
+        uiAppender = nullptr;
+    }
+
+    // 2️⃣ 可选：关闭 Log4Qt（确保所有 appender 文件安全关闭）
+    Log4Qt::LogManager::shutdown();
+
+    // 3️⃣ 最后删除 UI
     delete ui;
+}
+
+//配置日志输出相关信息
+void MainWindow::ConFigLog()
+{
+    // === 确保日志目录存在 ===
+    QDir dir("logs");
+    if (!dir.exists())
+        dir.mkpath(".");
+
+    // === 1️⃣ 初始化 Log4Qt 配置 ===
+    QString confPath = QCoreApplication::applicationDirPath() + "/log4qt.conf";
+    if (QFile::exists(confPath)) {
+        Log4Qt::PropertyConfigurator::configureAndWatch(confPath);
+    } else {
+        qWarning() << "配置文件不存在:" << confPath;
+    }
+
+    // === 2️⃣ 获取根 logger ===
+    logger = Log4Qt::Logger::rootLogger();
+
+    // === 3️⃣ 添加 UI 日志附加器 ===
+    uiAppender = new UiLogAppender(this);
+    Log4Qt::PatternLayout *layout = new Log4Qt::PatternLayout();
+    layout->setConversionPattern("%d{yyyy-MM-dd HH:mm:ss} [%p] %m");//不换行，如果换行：("%d{yyyy-MM-dd HH:mm:ss} [%p] %m%n");
+    layout->activateOptions();
+
+    uiAppender->setLayout(layout);
+    uiAppender->activateOptions();
+    logger->addAppender(uiAppender);
+
+    // === 4️⃣ 连接信号，用于更新界面日志 ===
+    connect(uiAppender, &UiLogAppender::logToUi, this, &MainWindow::onLogMessage, Qt::QueuedConnection);
+
+    logger->info("程序启动");
 }
 
 void MainWindow::OnUpdateReceive(QString str)
 {
-    logInfo(QString("Rec(Hex):%1").arg(str));
+    logger->info(QString("Rec(Hex):%1").arg(str));
 }
 
 void MainWindow::btnSelectFile_clicked()
@@ -143,7 +199,7 @@ void MainWindow::btnSelectFile_clicked()
     if (!fileName.isEmpty()) {
         m_loopFile = fileName;
         ui->lEdit_File->setText(m_loopFile);
-        logInfo(QString("选择文件: %1").arg(fileName));
+        logger->info(QString("选择文件: %1").arg(fileName));
 
         // 验证文件
         if (validateCsvFile(fileName)) {
@@ -155,10 +211,10 @@ void MainWindow::btnSelectFile_clicked()
             WriteSetting(jsonSetting);
 
             readCsvFile(fileName);
-            logDebug("文件验证成功");
+            logger->info("文件验证成功");
         } else {
             ui->lEdit_File->setStyleSheet("QLineEdit { color: red; }");
-            logWarning("文件验证失败");
+            logger->warn("文件验证成功");
             QMessageBox::warning(this, "文件验证失败", "选择的文件不是有效的csv文件或格式不正确。");
         }
     }
@@ -176,53 +232,17 @@ void MainWindow::onLogMessage(const QString& message)
     ui->textEdit_Log->setTextCursor(cursor);
 }
 
-// 修改日志输出方法
-void MainWindow::logMessage(const QString& message, const QString& type)
-{
-    // 立即在调用线程中输出到控制台（时间准确）
-    QString currentTimestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz");
-    QString consoleEntry = QString("[%1] %2: %3").arg(currentTimestamp, type, message);
-    qDebug().noquote() << consoleEntry;
-
-    // 发送信号到主线程更新UI，时间戳在槽函数中生成
-    if(type!="DEBUG")
-    {
-        emit sigLogMessage(consoleEntry);
-    }
-}
-
-// 各种级别的日志方法
-void MainWindow::logDebug(const QString& message)
-{
-    logMessage(message, "DEBUG");
-}
-
-void MainWindow::logInfo(const QString& message)
-{
-    logMessage(message, "INFO");
-}
-
-void MainWindow::logWarning(const QString& message)
-{
-    logMessage(message, "WARNING");
-}
-
-void MainWindow::logError(const QString& message)
-{
-    logMessage(message, "ERROR");
-}
-
 // 验证csv文件
 bool MainWindow::validateCsvFile(const QString& filePath)
 {
     QFile file(filePath);
     if (!file.exists()) {
-        logError(QString("文件不存在: %1").arg(filePath));
+        logger->error(QString("文件不存在: %1").arg(filePath));
         return false;
     }
 
     if (!file.open(QIODevice::ReadOnly)) {
-        logError(QString("无法打开文件: %1").arg(filePath));
+        logger->error(QString("无法打开文件: %1").arg(filePath));
         return false;
     }
     return true;
@@ -233,7 +253,7 @@ void MainWindow::readCsvFile(const QString &filePath)
     dataLEDPara.clear();
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        logError(QString("文件%1打开失败").arg(filePath));
+        logger->error(QString("文件\"%1\"打开失败").arg(filePath));
         return;
     }
 
@@ -259,7 +279,7 @@ void MainWindow::readCsvFile(const QString &filePath)
         dataLEDPara.append(row);
     }
     file.close();
-    logInfo(QString("文件%1读取成功").arg(filePath));
+    logger->info(QString("文件\"%1\"读取成功").arg(filePath));
 }
 
 // 读取配置文件
@@ -299,21 +319,21 @@ void MainWindow::WriteSetting(QJsonObject myJson)
 
 void MainWindow::slot_FPGA_prepared()
 {
-    logInfo("内核初始化完成");
+    logger->info("内核初始化完成");
     ui->bt_startLoop->setEnabled(true);
     UIcontrolEnable(true);
 }
 
 void MainWindow::slot_measureStoped()
 {
-    logInfo("测量已停止");
+    logger->info("测量已停止");
     ui->bt_startLoop->setEnabled(true);
     UIcontrolEnable(true);
 }
 
 void MainWindow::slot_finishedOneLoop()
 {
-    if(tempLEDdata.size())
+    // if(tempLEDdata.size())
 }
 
 void MainWindow::UIcontrolEnable(bool flag)
@@ -371,7 +391,7 @@ void MainWindow::on_pushButtonOpen_clicked()
             if(flag)
             {
                 ui->pushButtonOpen->setText(tr("close"));
-                logInfo(QString("串口%1已打开").arg(portName));
+                logger->info(QString("串口%1已打开").arg(portName));
                 commManager->ressetFPGA();
                 ui->bt_startLoop->setEnabled(true);
                 ui->bt_kernelReset->setEnabled(true);
@@ -383,7 +403,7 @@ void MainWindow::on_pushButtonOpen_clicked()
             else
             {
                 ui->pushButtonOpen->setText(tr("open"));
-                logError(QString("串口%1打开失败").arg(portName));
+                logger->error(QString("串口%1打开失败").arg(portName));
                 ui->bt_startLoop->setEnabled(false);
                 ui->bt_kernelReset->setEnabled(false);
                 ui->bt_baseLineSample->setEnabled(false);
@@ -399,7 +419,7 @@ void MainWindow::on_pushButtonOpen_clicked()
     {
         QString portName = ui->comboBoxPortName->currentText();
         commManager->close();
-        logInfo(QString("串口%1已关闭").arg(portName));
+        logger->info(QString("串口%1已关闭").arg(portName));
         ui->pushButtonOpen->setText(tr("open"));
         ui->bt_startLoop->setEnabled(false);
         ui->bt_kernelReset->setEnabled(false);
@@ -428,18 +448,18 @@ void MainWindow::on_bt_startLoop_clicked()
         tempLEDdata.clear();
         for(auto data:dataLEDPara)
         {
-            if(data.LED_intensity>=intensityLeft && data.LED_intensity <= intensityRight)
+            if(data.ledIntensity>=intensityLeft && data.ledIntensity <= intensityRight)
             {
                 tempLEDdata.push_back(data);
             }
         }
         if(tempLEDdata.size()==0)
         {
-            logError("设置的光强区间错误，请核对后重新开始循环");
+            // logError("设置的光强区间错误，请核对后重新开始循环");
             return;
         }
 
-        commManager->
+        commManager->startOneLoop(tempLEDdata.first());
         tempLEDdata.removeFirst();
     }
 
@@ -638,10 +658,10 @@ void MainWindow::onBLmodeToggled(bool checked)
     if (checked) { // 只处理“被选中”的情况（避免重复触发）
         QRadioButton *senderRadio = qobject_cast<QRadioButton*>(sender());
         if (senderRadio == ui->radioButton_auto) {
-            logInfo("基线采集模式：自动");
+            logger->info("基线采集模式：自动");
             ui->bt_baseLineSample->setEnabled(false);
         } else if (senderRadio == ui->radioButton_manual) {
-            logInfo("基线采集模式：手动");
+            logger->info("基线采集模式：手动");
             ui->bt_baseLineSample->setEnabled(true);
         }
     }

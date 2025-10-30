@@ -7,7 +7,7 @@
 // 声明常用结构体
 struct CsvDataRow {
     double ledIntensity;       // 第一列：光强（double）
-    QVector<int> dacValues;    // 其他列：DAC值（int）
+    int dacValues[10];    // 其他列：DAC值（int）
 };
 
 // 声明常用函数（工具函数）

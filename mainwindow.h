@@ -12,6 +12,8 @@
 #include "common.h"
 #include <QCheckBox>
 
+#include "uilogappender.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -26,6 +28,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void readCsvFile(const QString &filePath);
+    void ConFigLog();
 
     //JSON 文件读写
     static QJsonObject ReadSetting(); // 读取配置文件
@@ -38,14 +41,13 @@ private:
     // void onReadEvent(const char *portName, unsigned int readBufferLen);
 
     // 日志输出方法
-    void logMessage(const QString& message, const QString& type = "INFO");
-    void logDebug(const QString& message);
-    void logInfo(const QString& message);
-    void logWarning(const QString& message);
-    void logError(const QString& message);
+    // void logMessage(const QString& message, const QString& type = "INFO");
+    // void logDebug(const QString& message);
+    // void logInfo(const QString& message);
+    // void logWarning(const QString& message);
+    // void logError(const QString& message);
 
 signals:
-    void sigLogMessage(const QString& message); // 新增日志信号
 
 private slots:
     void btnSelectFile_clicked();
@@ -71,6 +73,8 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    Log4Qt::Logger *logger; // Log4Qt日志器
+    UiLogAppender *uiAppender; // UI日志附加器
     QString m_loopFile;
     CommandHelper *commManager; // 其他类的对象
 
