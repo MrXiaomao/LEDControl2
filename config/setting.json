@@ -1,0 +1,21 @@
+{
+	"User":{
+		"PowerStableTime" : 10,
+		"TempMonitorGap":1,
+		"TriggerWidth":1000,
+		"clockFrequency":10,
+		"HLpoint":1
+	},
+	"UI":{
+		"LEDWidth":10,
+		"LightDelayTime":1000,
+		"TriggerDelayTime":1000,
+		"timesLED":1000,
+		"checkValueA":1023,
+		"checkValueB":1023,
+		"LED_ConfigFile":"C:\Users\DELL\Desktop\QT_Study\LEDControl2\参考列表.csv",
+		"IntensityLeft":10.0,
+		"IntensityRight":200.0,
+		"BaseLineSampleMode":"auto"
+	}
+}
