@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 #include <QDateTime>
-#include <QJsonObject>
+
 
 // #include "CSerialPort/SerialPort.h"
 // #include "CSerialPort/SerialPortInfo.h"
@@ -28,24 +28,13 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void readCsvFile(const QString &filePath);
-    void ConFigLog();
+    void ConfigLog();
 
-    //JSON 文件读写
-    static QJsonObject ReadSetting(); // 读取配置文件
-    static void WriteSetting(QJsonObject);  // 写配置文件
-    static QString jsonPath;
 
 private:
     void UIcontrolEnable(bool flag);
     bool validateCsvFile(const QString& filePath);
-    // void onReadEvent(const char *portName, unsigned int readBufferLen);
-
-    // 日志输出方法
-    // void logMessage(const QString& message, const QString& type = "INFO");
-    // void logDebug(const QString& message);
-    // void logInfo(const QString& message);
-    // void logWarning(const QString& message);
-    // void logError(const QString& message);
+    void refreshSerialPort();
 
 signals:
 
@@ -54,9 +43,13 @@ private slots:
     void onLogMessage(const QString& message); // 新增日志槽函数
     void OnUpdateReceive(QString str);
     void on_pushButtonOpen_clicked();
-    void slot_FPGA_prepared(); //FPGA配置好了，可以进行循环
+
+    void slot_RebackUnable(); //恢复界面按键使用，
+    void slot_Reset_finished(); //FPGA配置好了，可以进行循环
+    void slot_config_finished(); //循环前的参数配置已经完成
     void slot_measureStoped(); //测量已停止
     void slot_finishedOneLoop(); //完成一次循环，准备下一次循环
+    void slot_updateTemp(int id, double temp); //更新界面的温度
 
     void on_bt_startLoop_clicked();
     void onCheckStateChangedA(int state); // 勾选框状态变化时更新数值
@@ -70,6 +63,8 @@ private slots:
 
     // 基线采集模式选择
     void onBLmodeToggled(bool checked);
+
+    void on_bt_refreshPort_clicked();
 
 private:
     Ui::MainWindow *ui;

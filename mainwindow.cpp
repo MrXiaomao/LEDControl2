@@ -1,11 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-// #include <QFile>
 #include <QDir>
-#include <QJsonDocument>
-#include <Qjsonarray>
-
 #include <QFileDialog>
 #include <QToolButton>
 #include <QMessageBox>
@@ -18,8 +14,6 @@
 #include <log4qt/propertyconfigurator.h>
 #include <log4qt/logManager.h>
 #include "uilogappender.h"
-
-QString MainWindow::jsonPath = "./config/setting.json";
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -81,39 +75,18 @@ MainWindow::MainWindow(QWidget *parent)
         }
     }
 
-    //init
-    std::vector<SerialPortInfo> portNameList = CSerialPortInfo::availablePortInfos();
-
-    for (size_t i = 0; i < portNameList.size(); i++)
-    {
-        ui->comboBoxPortName->insertItem(i,QString::fromLocal8Bit(portNameList[i].portName));
-    }
-
-    //ui
-    ui->pushButtonOpen->setText(tr("open"));
-
-    if (portNameList.size() > 0)
-    {
-        QString message = QString("First avaiable Port: %1").arg(portNameList[0].portName);
-        QString currentTimestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz");
-        QString consoleEntry = QString("[%1] %2: %3").arg(currentTimestamp, "info", message);
-
-        ui->textEdit_Log->moveCursor (QTextCursor::End);
-        ui->textEdit_Log->insertPlainText(consoleEntry);
-    }
-    else
-    {
-        ui->textEdit_Log->moveCursor (QTextCursor::End);
-        ui->textEdit_Log->insertPlainText("No avaiable Port");
-        return;
-    }
+    //初始化串口
+    refreshSerialPort();
 
     ui->bt_startLoop->setEnabled(false);
 
     // 连接日志信号槽
-    connect(commManager, &CommandHelper::sigUpdateReceive, this, &MainWindow::OnUpdateReceive, Qt::QueuedConnection);
-    connect(commManager, &CommandHelper::sigFPGA_prepared, this, &MainWindow::slot_FPGA_prepared, Qt::QueuedConnection);
-    connect(commManager, &CommandHelper::sigFPGA_stoped, this, &MainWindow::slot_measureStoped, Qt::QueuedConnection);
+    // connect(commManager, &CommandHelper::sigUpdateReceive, this, &MainWindow::OnUpdateReceive, Qt::QueuedConnection);
+    connect(commManager, &CommandHelper::sigRebackUnbale, this, &MainWindow::slot_RebackUnable, Qt::QueuedConnection);
+    connect(commManager, &CommandHelper::sigReset_finished, this, &MainWindow::slot_Reset_finished, Qt::QueuedConnection);
+    connect(commManager, &CommandHelper::sigConfigFinished, this, &MainWindow::slot_config_finished, Qt::QueuedConnection);
+    connect(commManager, &CommandHelper::sigLoop_stoped, this, &MainWindow::slot_measureStoped, Qt::QueuedConnection);
+    connect(commManager, &CommandHelper::sigUpdateTemp, this, &MainWindow::slot_updateTemp, Qt::QueuedConnection);
     connect(commManager, &CommandHelper::sigFinishCurrentloop, this, &MainWindow::slot_finishedOneLoop, Qt::QueuedConnection);
 
     // 2. （可选）关联选中状态变化的信号（两个单选按钮可共用一个槽函数）
@@ -123,12 +96,16 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->checkA_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllAChanged);
     connect(ui->checkB_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllBChanged);
 
-    ConFigLog();
+    ConfigLog();
 }
 
 MainWindow::~MainWindow()
 {
+    //退出时关闭串口
+    commManager->close();
+
     // 1️⃣ 从 logger 移除自定义附加器（防止退出时再触发 append）
+    logger->debug("软件正常退出！");
     if (logger && uiAppender) {
         logger->removeAppender(uiAppender);
         uiAppender->close();
@@ -140,11 +117,64 @@ MainWindow::~MainWindow()
     Log4Qt::LogManager::shutdown();
 
     // 3️⃣ 最后删除 UI
+    delete commManager;
     delete ui;
 }
 
+//刷新串口
+void MainWindow::refreshSerialPort()
+{
+    //获取端口
+    std::vector<SerialPortInfo> portNameList = CSerialPortInfo::availablePortInfos();
+    if (portNameList.size() > 0)
+    {
+        QString message = "Avaiable Port is refreshed";
+        QString currentTimestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz");
+        QString consoleEntry = QString("[%1] %2: %3").arg(currentTimestamp, "info", message);
+
+        //考虑到界面初始化调用此函数的时候，无法打印日志到界面
+        ui->textEdit_Log->moveCursor (QTextCursor::End);
+        ui->textEdit_Log->insertPlainText(consoleEntry);
+    }
+    else
+    {
+        ui->textEdit_Log->moveCursor (QTextCursor::End);
+        ui->textEdit_Log->insertPlainText("No avaiable Port");
+        return;
+    }
+
+    //串口已打开
+    if(commManager->getSerialPortStatus()){
+        //记录当前端口
+        QString currentPortName = ui->comboBoxPortName->currentText();
+        ui->comboBoxPortName->clear();
+        ui->comboBoxPortName->insertItem(0, currentPortName);
+        int index = 0;
+        for (size_t i = 0; i < portNameList.size(); i++)
+        {
+            QString portName = QString::fromLocal8Bit(portNameList[i].portName);
+            if(currentPortName == portName){
+                continue;
+            }
+            ui->comboBoxPortName->insertItem(index++, portName);
+        }
+
+    }
+    else //串口本身未打开状态
+    {
+        ui->comboBoxPortName->clear();
+        for (size_t i = 0; i < portNameList.size(); i++)
+        {
+            QString portName = QString::fromLocal8Bit(portNameList[i].portName);
+            ui->comboBoxPortName->insertItem(i, portName);
+        }
+        //ui
+        ui->pushButtonOpen->setText(tr("open"));
+    }
+}
+
 //配置日志输出相关信息
-void MainWindow::ConFigLog()
+void MainWindow::ConfigLog()
 {
     // === 确保日志目录存在 ===
     QDir dir("logs");
@@ -206,9 +236,9 @@ void MainWindow::btnSelectFile_clicked()
             ui->lEdit_File->setStyleSheet("QLineEdit { color: green; }");
 
             // 保存到配置文件
-            QJsonObject jsonSetting = ReadSetting();
+            QJsonObject jsonSetting = CommonUtils::ReadSetting();
             jsonSetting["loop_file"] = m_loopFile;
-            WriteSetting(jsonSetting);
+            CommonUtils::WriteSetting(jsonSetting);
 
             readCsvFile(fileName);
             logger->info("文件验证成功");
@@ -282,46 +312,30 @@ void MainWindow::readCsvFile(const QString &filePath)
     logger->info(QString("文件\"%1\"读取成功").arg(filePath));
 }
 
-// 读取配置文件
-QJsonObject MainWindow::ReadSetting()
+void MainWindow::slot_RebackUnable()
 {
-    // 读取文件
-    QFile file(jsonPath);
-    file.open(QFile::ReadOnly);
-    QByteArray all = file.readAll();
-    file.close();
-
-    QJsonDocument doc = QJsonDocument::fromJson(all);//转换成文档对象
-    QJsonObject obj;
-    if (doc.isObject())//可以不做格式判断，因为，解析的时候已经知道是什么数据了
-    {
-        obj = doc.object(); //得到Json对象
-    }
-    return obj;
+    ui->bt_startLoop->setEnabled(true);
+    ui->bt_startLoop->setText("开始测量");
+    UIcontrolEnable(true);
 }
 
-// 写入配置文件，实际上是修改配置文件
-void MainWindow::WriteSetting(QJsonObject myJson)
-{
-    //创建QJsonDocument对象并将根对象传入
-    QJsonDocument jDoc(myJson);
-    //打开存放json串的文件
-    QFile file(jsonPath);
-    if (!file.open(QIODevice::WriteOnly)) return ;
-
-    //使用QJsonDocument的toJson方法获取json串并保存到数组
-    QByteArray data(jDoc.toJson());
-
-    //将json串写入文件
-    file.write(data);
-    file.close();
-}
-
-void MainWindow::slot_FPGA_prepared()
+void MainWindow::slot_Reset_finished()
 {
     logger->info("内核初始化完成");
     ui->bt_startLoop->setEnabled(true);
     UIcontrolEnable(true);
+}
+void MainWindow::slot_config_finished() //循环前的参数配置已经完成
+{
+    logger->info("参数配置完成");
+
+    //开始真正的循环
+    CsvDataRow data = tempLEDdata.first();
+    logger->info(QString("开始循环,光强:%1").arg(data.ledIntensity));
+    ui->progressBar->setRange(0,tempLEDdata.size());
+    ui->progressBar->setValue(0);
+    commManager->startOneLoop(data);
+    tempLEDdata.removeFirst();
 }
 
 void MainWindow::slot_measureStoped()
@@ -331,9 +345,50 @@ void MainWindow::slot_measureStoped()
     UIcontrolEnable(true);
 }
 
+/**
+ * @brief MainWindow::slot_updateTemp 更新界面的温度显示
+ * @param id 温度编号：1~4
+ * @param temp 温度，单位：℃
+ */
+void MainWindow::slot_updateTemp(int id, double temp)
+{
+    switch (id) {
+    case 1:
+        ui->lineEdit_Temp1->setText(QString::number(temp,'f', 3));
+        break;
+    case 2:
+        ui->lineEdit_Temp2->setText(QString::number(temp,'f', 3));
+        break;
+    case 3:
+        ui->lineEdit_Temp3->setText(QString::number(temp,'f', 3));
+        break;
+    case 4:
+        ui->lineEdit_Temp4->setText(QString::number(temp,'f', 3));
+        break;
+    default:
+        break;
+    }
+}
+
 void MainWindow::slot_finishedOneLoop()
 {
-    // if(tempLEDdata.size())
+    //更新进度条
+    int total = ui->progressBar->maximum();
+    ui->progressBar->setValue(total-tempLEDdata.size());
+
+    if(tempLEDdata.size()>0)
+    {
+        CsvDataRow data = tempLEDdata.first();
+        logger->info("当前循环结束");
+        logger->info(QString("开始一次新的循环,光强:%1").arg(data.ledIntensity));
+        commManager->startOneLoop(data);
+        tempLEDdata.removeFirst();
+    }
+    else{
+        logger->info("完成所有循环");
+        UIcontrolEnable(true);
+        ui->bt_startLoop->setEnabled(true);
+    }
 }
 
 void MainWindow::UIcontrolEnable(bool flag)
@@ -431,16 +486,17 @@ void MainWindow::on_pushButtonOpen_clicked()
 void MainWindow::on_bt_startLoop_clicked()
 {
     //开始循环
+    if(ui->bt_startLoop->text() == "开始循环")
     {
         //禁用界面控件
         UIcontrolEnable(false);
 
-        //发光宽度,单位ns
-        int LED_width = ui->spinBox_LEDWidth->value();
-        //LED发光延迟时间,单位ns
-        int delayTime = ui->spinBox_lightDelayTime->value();
-        //发光次数
-        int times = ui->spinBox_timesLED->value();
+        //获取界面FPGA相关控制参数
+        CommonUtils::UI_FPGAconfig config;
+        config.LEDWidth = ui->spinBox_LEDWidth->value();
+        config.LightDelayTime = ui->spinBox_lightDelayTime->value();
+        config.TriggerDelayTime = ui->spinBox_TriggerDelayTime->value();
+        config.timesLED = ui->spinBox_timesLED->value();
 
         double intensityLeft = ui->doubleSpinBox_loopStart->value();
         double intensityRight = ui->doubleSpinBox_loopEnd->value();
@@ -455,18 +511,18 @@ void MainWindow::on_bt_startLoop_clicked()
         }
         if(tempLEDdata.size()==0)
         {
-            // logError("设置的光强区间错误，请核对后重新开始循环");
+            logger->fatal("设置的光强区间错误，请核对后重新开始循环");
+            UIcontrolEnable(true);
             return;
         }
-
-        commManager->startOneLoop(tempLEDdata.first());
-        tempLEDdata.removeFirst();
+        logger->info(QString("循环的光强区间：%1~%2").arg(intensityLeft).arg(intensityRight));
+        bool isAutoMode = ui->radioButton_auto->isChecked();
+        commManager->setConfigBeforeLoop(config, isAutoMode);
     }
-
-    //停止测量
-    {
+    else{ //停止测量
         commManager->stopMeasure();
         ui->bt_startLoop->setEnabled(false);
+        ui->bt_startLoop->setText("停止循环");
     }
 }
 
@@ -658,10 +714,10 @@ void MainWindow::onBLmodeToggled(bool checked)
     if (checked) { // 只处理“被选中”的情况（避免重复触发）
         QRadioButton *senderRadio = qobject_cast<QRadioButton*>(sender());
         if (senderRadio == ui->radioButton_auto) {
-            logger->info("基线采集模式：自动");
+            logger->info("设置基线采集模式：自动");
             ui->bt_baseLineSample->setEnabled(false);
         } else if (senderRadio == ui->radioButton_manual) {
-            logger->info("基线采集模式：手动");
+            logger->info("设置基线采集模式：手动");
             ui->bt_baseLineSample->setEnabled(true);
         }
     }
@@ -678,6 +734,12 @@ void MainWindow::on_bt_kernelReset_clicked()
 
 void MainWindow::on_bt_baseLineSample_clicked()
 {
-    commManager->baseLineSample();
+    commManager->baseLineSample_manual();
+}
+
+
+void MainWindow::on_bt_refreshPort_clicked()
+{
+    refreshSerialPort();
 }
 

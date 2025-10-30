@@ -39,13 +39,19 @@ public:
     void send(QByteArray cmd);
 
     //采集基线
-    void baseLineSample();
+    void baseLineSample_manual();
 
     //先关闭之前FPGA的状态，循环前的准备工作
     void ressetFPGA();
 
+    //进行循环前配置,是否自动采集基线
+    void setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, bool isBLSample);
+
     //进行一次测量
     void startOneLoop(CsvDataRow data);
+
+    //测量结束后恢复状态
+    void resetFPGA_afterMeasure();
 
     //停止测量
     void stopMeasure();
@@ -64,18 +70,23 @@ public:
     //网口原始数据解析线程
     void netFrameWorkThead();
 
+    const bool getSerialPortStatus(){return m_SerialPort.isOpen();}
 
 
 protected:
     enum WorkStatusFlag {
         NoWork = 0,     // 未开始
-        Preparing = 1,  // 初始化过程中...
-        Prepared = 2,  // 初始化完成
-        Looping = 3,  // 循环配置中...
-        BLSampleing = 4, //采集基线中...
-        MeasuringTemp = 5,  // 测量温度中...
-        Stopping = 6, // 停止测量中...
-        WorkEnd = 7    // 测量结束
+        Preparing,  // 初始化过程中...
+        Prepared,   // 初始化完成
+        LoopStep1,  // 注意其中有个电压稳定时间，该时间依靠软件界面定时器来实现延时。
+        Looping,    // 开启硬件触发后，等待触发
+        BLSampleing_manual, //采集基线中...
+        BLSampleing_auto, //循环中的自动采集基线
+        ConfigBeforeLoop, //循环前的指令配置
+        MeasuringTemp, // 测量温度中...
+        Stopping, // 停止测量中...
+        Resetting, //没有自动基线测量，直接重置中。
+        WorkEnd  // 测量结束
     };
 private:
     virtual void onReadEvent(const char *portName, unsigned int readBufferLen);
@@ -89,10 +100,14 @@ signals:
     void sigUpdateReceive(QString str);
     void sigUpdateData(QByteArray data);
 
-    void sigFPGA_prepared(); //FPGA准备工作完成，初始化完成，可进行配置参数
+    void sigRebackUnbale(); //通知界面恢复控件使用
+    void sigReset_finished(); //FPGA准备工作完成，初始化完成，可进行配置参数
     void sigBLSampleFinished(); //基线采样完成
-    void sigFPGA_stoped(); //停止测量已完成
+    void sigConfigFinished(); //循环前的配置已经完成
+    void sigLoop_stoped(); //停止测量已完成
+    void sigMeasureFinished(); //完成一次测量，接下来关闭电源、DAC配置。。。等
     void sigFinishCurrentloop(); //当前循环结束
+    void sigUpdateTemp(int id, double temp); //监测到的温度。id：1~4。温度：摄氏度
 
 private:
     Log4Qt::Logger *logger;   // 日志
@@ -103,6 +118,7 @@ private:
     bool taskFinished = false;
     QMutex mutexCache;
     WorkStatusFlag workStatus = NoWork;
+    bool m_isBLSample; //是否自动采集基线
 };
 
 #endif // COMMANDHELPER_H

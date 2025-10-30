@@ -40,7 +40,7 @@ QByteArray Order::cmd_LightDelayTimeB("\x12\x11\x00\x01\xDD", 5);
 QByteArray Order::cmd_TriggerDelayTimeA("\x12\x11\x00\x00\xDD", 5);
 QByteArray Order::cmd_TriggerDelayTimeB("\x12\x31\x00\x00\xDD", 5);
 //12、配置移位寄存器时钟频率
-const QByteArray Order::cmd_clockFrequency("\x12\x03\x00\x0A\xDD", 5);
+QByteArray Order::cmd_clockFrequency("\x12\x03\x00\x0A\xDD", 5);
 //13、配置硬件触发高电平点数,单位×10ns，默认值10ns，软件保护，不能为0
 QByteArray Order::cmd_HLpoint("\x12\x0E\x00\x01\xDD", 5);
 //14、配置LED发光次数,默认1000
@@ -69,7 +69,7 @@ const QByteArray Order::cmd_openBLSamlpe("\x12\x1C\x00\x01\xDD", 5);
 //29、基线采集完成指令反馈
 const QByteArray Order::cmd_BLSamlpeFinish("\x12\xF6\x00\x00\xDD", 5);
 
-QByteArray Order::getTempPara(unsigned char frequency)
+QByteArray Order::getTempMonitorGap(unsigned char frequency)
 {
     QByteArray tempcmd = cmd_TempPara;
     if(frequency>0 && frequency <0x0A)
@@ -143,6 +143,19 @@ QByteArray Order::getTriggerDelayTimeB(unsigned int delaytime)
     QByteArray tempcmd = cmd_TriggerDelayTimeB;
     tempcmd[2] = delaytime & 0xFF000000;
     tempcmd[3] = delaytime & 0x00FF0000;
+    return tempcmd;
+}
+
+//时钟频率,单位ns，默认10ns，必须是10的整数倍
+QByteArray Order::getClockFrequency(unsigned short frequency)
+{
+    //确保数值不小于10
+    if(frequency<10) frequency = 10;
+    //转化为x10ns的单位
+    frequency = frequency / 10;
+    QByteArray tempcmd = cmd_clockFrequency;
+    tempcmd[2] = frequency & 0xFF00;
+    tempcmd[3] = frequency & 0x00FF;
     return tempcmd;
 }
 

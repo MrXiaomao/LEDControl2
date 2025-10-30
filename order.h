@@ -38,8 +38,8 @@ public:
     //11、配置同步触发延迟时间,其中XX XX和YY YY为16进制数，单位10ns，默认1μs，上限10ms
     static QByteArray cmd_TriggerDelayTimeA;
     static QByteArray cmd_TriggerDelayTimeB;
-    //12、配置移位寄存器时钟频率
-    static const QByteArray cmd_clockFrequency;
+    //12、配置移位寄存器时钟频率，单位10ns。
+    static QByteArray cmd_clockFrequency;
     //13、配置硬件触发高电平点数,单位×10ns，默认值10ns，软件保护，不能为0
     static QByteArray cmd_HLpoint;
     //14、配置LED发光次数,默认1000
@@ -69,7 +69,7 @@ public:
     static const QByteArray cmd_BLSamlpeFinish;
 
     //温度监测时间间隔，s，范围1-A
-    static QByteArray getTempPara(unsigned char deltaT);
+    static QByteArray getTempMonitorGap(unsigned char deltaT);
 
     //LED发光宽度，输入单位为ns，例如300ns对应：00 1E
     static QByteArray getLEDWidth(unsigned short width);
@@ -86,6 +86,9 @@ public:
     static QByteArray getTriggerDelayTimeA(unsigned int delaytime = 1000);
     //同步触发延迟时间(int数值高八位)，单位为ns，上限10ms(1E7ns), 例如300ns对应：00 1E
     static QByteArray getTriggerDelayTimeB(unsigned int delaytime = 1000);
+
+    //时钟频率,单位ns，默认10ns，必须是10的整数倍
+    static QByteArray getClockFrequency(unsigned short frequency = 10);
 
     //硬件触发高电平点数,单位ns，默认值10ns，不能为0
     static QByteArray getHLpoint(unsigned char duratime = 10);
