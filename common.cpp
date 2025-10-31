@@ -52,7 +52,8 @@ CommonUtils::UserConfig CommonUtils::loadUserConfig()
         "TempMonitorGap",
         "TriggerWidth",
         "clockFrequency",
-        "HLpoint"
+        "HLpoint",
+        "timesTrigger"
     };
 
     // 校验所有关键字段
@@ -65,18 +66,20 @@ CommonUtils::UserConfig CommonUtils::loadUserConfig()
 
     // 全部存在，安全读取
     UserConfig config;
-    config.PowerStableTime = user.value("PowerStableTime").toInt();
-    config.TempMonitorGap  = user.value("TempMonitorGap").toInt();
-    config.TriggerWidth    = user.value("TriggerWidth").toInt();
-    config.clockFrequency  = user.value("clockFrequency").toInt();
-    config.HLpoint         = user.value("HLpoint").toInt();
+    config.PowerStableTime = user.value("PowerStableTime").toInt(10);
+    config.TempMonitorGap  = static_cast<unsigned short>(user.value("TempMonitorGap").toInt(1));
+    config.TriggerWidth    = user.value("TriggerWidth").toInt(1000);
+    config.clockFrequency  = user.value("clockFrequency").toInt(10);
+    config.HLpoint         = user.value("HLpoint").toInt(1);
+    config.timesTrigger    = user.value("timesTrigger").toInt(1000);
 
-    qInfo() << "✅ User 配置加载成功:";
+    qInfo() << "  User 配置加载成功:";
     qInfo() << "   PowerStableTime =" << config.PowerStableTime;
     qInfo() << "   TempMonitorGap  =" << config.TempMonitorGap;
     qInfo() << "   TriggerWidth    =" << config.TriggerWidth;
     qInfo() << "   clockFrequency  =" << config.clockFrequency;
     qInfo() << "   HLpoint         =" << config.HLpoint;
+    qInfo() << "   timesTrigger    =" << config.timesTrigger;
 
     return config;
 }

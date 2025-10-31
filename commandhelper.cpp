@@ -98,13 +98,12 @@ void CommandHelper::ressetFPGA()
     cmdPool.push_back(Order::cmd_closeDAC);
     cmdPool.push_back(Order::cmd_closeHardTrigger);
     cmdPool.push_back(Order::cmd_closeBLSamlpe);
-    cmdPool.push_back(Order::cmd_resetFPGA);
+    cmdPool.push_back(Order::cmd_resetRegister);
     cmdPool.push_back(Order::cmd_closeTempMonitor);
 
     workStatus = Preparing;
     send(cmdPool.first());
     logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
-
 }
 
 //采集基线
@@ -124,19 +123,22 @@ void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeB
     m_modeBLSample = mode_BLsample;
     cmdPool.clear();
 
-    cmdPool.push_back(Order::cmd_closeHardTrigger);
     cmdPool.push_back(Order::cmd_closePower);
     cmdPool.push_back(Order::cmd_closeDAC);
-    cmdPool.push_back(Order::cmd_resetFPGA);
+    cmdPool.push_back(Order::cmd_closeHardTrigger);
+    cmdPool.push_back(Order::cmd_closeBLSamlpe);
+    cmdPool.push_back(Order::cmd_resetRegister);
+    cmdPool.push_back(Order::cmd_closeTempMonitor);
 
     //setting.json文件中的设置
     QJsonObject jsonSetting = CommonUtils::ReadSetting();
     try {
-        CommonUtils::UserConfig jsonConfig_FPGA = CommonUtils::loadUserConfig();
+        jsonConfig_FPGA = CommonUtils::loadUserConfig();
         // cmdPool.push_back(Order::getTempMonitorGap(jsonConfig_FPGA.TempMonitorGap));//当前温度监测模块没有，所以不支持该指令。
         cmdPool.push_back(Order::getTriggerWidth(jsonConfig_FPGA.TriggerWidth));
         cmdPool.push_back(Order::getClockFrequency(jsonConfig_FPGA.clockFrequency));
         cmdPool.push_back(Order::getHLpoint(jsonConfig_FPGA.HLpoint));
+        cmdPool.push_back(Order::getTimesTrigger(jsonConfig_FPGA.timesTrigger));
     }
     catch (const std::exception &e) {
         QMessageBox::critical(NULL, "配置错误", e.what());
@@ -165,7 +167,7 @@ void CommandHelper::startOneLoop(CsvDataRow data)
     //配置DAC数据
     for(int i=0; i<10; i++)
     {
-        cmdPool.push_back(Order::getVoltConfig(i,data.dacValues[i]));
+        cmdPool.push_back(Order::getVoltConfig(i+1,data.dacValues[i]));
     }
     //写入DAC数据
     cmdPool.push_back(Order::cmd_writeDAC);
@@ -183,7 +185,7 @@ void CommandHelper::resetFPGA_afterMeasure()
     cmdPool.push_back(Order::cmd_closePower);
     cmdPool.push_back(Order::cmd_closeDAC);
     cmdPool.push_back(Order::cmd_closeHardTrigger);
-    cmdPool.push_back(Order::cmd_resetFPGA);
+    cmdPool.push_back(Order::cmd_resetRegister);
 
     if(m_modeBLSample == AutoBL){
         cmdPool.push_back(Order::cmd_openBLSamlpe); //开启基线采集
@@ -205,23 +207,10 @@ void CommandHelper::stopMeasure()
     cmdPool.push_back(Order::cmd_closeHardTrigger);//两次关闭硬件触发
     cmdPool.push_back(Order::cmd_closeHardTrigger);//两次关闭硬件触发
     cmdPool.push_back(Order::cmd_closeBLSamlpe);
-    cmdPool.push_back(Order::cmd_resetFPGA);
+    cmdPool.push_back(Order::cmd_resetRegister);
     cmdPool.push_back(Order::cmd_closeTempMonitor);
 
     workStatus = Stopping;
-    send(cmdPool.first());
-    logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
-}
-
-void CommandHelper::setCommonConfig(unsigned short width, unsigned short times, unsigned int delaytime)
-{
-    cmdPool.clear();
-    cmdPool.push_back(Order::getLEDWidth(width));
-    cmdPool.push_back(Order::getTimesLED(times));
-    cmdPool.push_back(Order::getLightDelayTimeA(delaytime));
-    cmdPool.push_back(Order::getLightDelayTimeB(delaytime));
-
-    workStatus = Prepared;
     send(cmdPool.first());
     logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
 }
@@ -340,17 +329,9 @@ void CommandHelper::handleData(QByteArray data)
                 break;
             case LoopStep1:
                 //电压稳定时间
-                try {
-                    CommonUtils::UserConfig jsonConfig_FPGA = CommonUtils::loadUserConfig();
-                    QThread::msleep(jsonConfig_FPGA.PowerStableTime);
-                }
-                catch (const std::exception &e) {
-                    QMessageBox::critical(NULL, "配置错误", e.what());
-                    logger->fatal(QString("无法在\"%\"文件中找到\"User\"").arg(CommonUtils::jsonPath));
-                    emit sigRebackUnbale();
-                    return;
-                }
-                //开启触发
+                QThread::msleep(jsonConfig_FPGA.PowerStableTime);
+
+                //开启硬件触发
                 cmdPool.push_back(Order::cmd_HardTriggerOn);
                 send(cmdPool.first());
                 logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));

@@ -23,7 +23,7 @@ public:
     //4、关闭基线采集
     static const QByteArray cmd_closeBLSamlpe;
     //5、复位
-    static const QByteArray cmd_resetFPGA;
+    static const QByteArray cmd_resetRegister;
     //6、关闭温度监测
     static const QByteArray cmd_closeTempMonitor;
     //7、配置温度监测频率,其中X为16进制数，范围1-A，单位s，默认值1
@@ -40,7 +40,7 @@ public:
     static QByteArray cmd_TriggerDelayTimeB;
     //12、配置移位寄存器时钟频率，单位10ns。
     static QByteArray cmd_clockFrequency;
-    //13、配置硬件触发高电平点数,单位×10ns，默认值10ns，软件保护，不能为0
+    //13、配置硬件触发高电平点数，默认为1，最小值为1，软件保护，不能为0
     static QByteArray cmd_HLpoint;
     //14、配置LED发光次数,默认1000
     static QByteArray cmd_timesLED;
@@ -95,6 +95,9 @@ public:
 
     //LED发光次数,默认1000
     static QByteArray getTimesLED(unsigned short times = 1000);
+
+    // 同步触发次数,默认1000
+    static QByteArray getTimesTrigger(unsigned short times = 1000);
 
     //移位寄存器数据,控制灯光的点亮与否，待定
     static QByteArray getRegisterConfigA(unsigned short type);

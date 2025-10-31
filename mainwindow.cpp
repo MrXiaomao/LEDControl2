@@ -82,9 +82,6 @@ MainWindow::MainWindow(QWidget *parent)
         }
     }
 
-    //初始化串口
-    refreshSerialPort();
-
     ui->bt_startLoop->setEnabled(false);
 
     // 连接日志信号槽
@@ -104,6 +101,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->checkB_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllBChanged);
 
     ConfigLog();
+
+    //初始化串口
+    refreshSerialPort();
 
     // loadCheckBoxStateFromJson();
     loadUiConfigFromJson();
@@ -142,17 +142,19 @@ void MainWindow::refreshSerialPort()
     if (portNameList.size() > 0)
     {
         QString message = "Avaiable Port is refreshed";
-        QString currentTimestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz");
-        QString consoleEntry = QString("[%1] %2: %3").arg(currentTimestamp, "info", message);
+        // QString currentTimestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz");
+        // QString consoleEntry = QString("[%1] %2: %3").arg(currentTimestamp, "info", message);
 
-        //考虑到界面初始化调用此函数的时候，无法打印日志到界面
-        ui->textEdit_Log->moveCursor (QTextCursor::End);
-        ui->textEdit_Log->insertPlainText(consoleEntry);
+        // //考虑到界面初始化调用此函数的时候，无法打印日志到界面
+        // ui->textEdit_Log->moveCursor (QTextCursor::End);
+        // ui->textEdit_Log->insertPlainText(consoleEntry);
+        logger->info(message);
     }
     else
     {
-        ui->textEdit_Log->moveCursor (QTextCursor::End);
-        ui->textEdit_Log->insertPlainText("No avaiable Port");
+        // ui->textEdit_Log->moveCursor (QTextCursor::End);
+        // ui->textEdit_Log->insertPlainText("No avaiable Port");
+        logger->fatal("No avaiable Port");
         return;
     }
 
@@ -195,7 +197,7 @@ void MainWindow::ConfigLog()
         dir.mkpath(".");
 
     // === 1️⃣ 初始化 Log4Qt 配置 ===
-    QString confPath = QCoreApplication::applicationDirPath() + "/log4qt.conf";
+    QString confPath = QCoreApplication::applicationDirPath() + "/config/log4qt.conf";
     if (QFile::exists(confPath)) {
         Log4Qt::PropertyConfigurator::configureAndWatch(confPath);
     } else {

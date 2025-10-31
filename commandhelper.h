@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-10-26 17:03:54
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-10-30 12:59:53
+ * @LastEditTime: 2025-10-31 11:17:16
  * @Description: 请填写简介
  */
 #ifndef COMMANDHELPER_H
@@ -55,14 +55,6 @@ public:
 
     //停止测量
     void stopMeasure();
-
-    /**
-     * @brief setCommonConfig 配置FPGA一些公共参数
-     * @param width 发光宽度,单位ns
-     * @param times 发光次数
-     * @param delaytime 发光延迟,单位ns，默认1000s
-     */
-    void setCommonConfig(unsigned short width, unsigned short times, unsigned int delaytime = 1000);
 
     //串口开始工作
     void startWork();
@@ -119,6 +111,7 @@ private:
     QMutex mutexCache;
     WorkStatusFlag workStatus = NoWork;
     ModeBLSample m_modeBLSample; //是否自动采集基线
+    CommonUtils::UserConfig jsonConfig_FPGA;
 };
 
 #endif // COMMANDHELPER_H
