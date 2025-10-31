@@ -94,16 +94,18 @@ void CommandHelper::ressetFPGA()
 {
     cmdPool.clear();
 
-    cmdPool.push_back(Order::cmd_closePower);
-    cmdPool.push_back(Order::cmd_closeDAC);
-    cmdPool.push_back(Order::cmd_closeHardTrigger);
-    cmdPool.push_back(Order::cmd_closeBLSamlpe);
-    cmdPool.push_back(Order::cmd_resetRegister);
-    cmdPool.push_back(Order::cmd_closeTempMonitor);
+    cmdPool.push_back({"关闭电源", Order::cmd_closePower});
+    cmdPool.push_back({"关闭DAC配置", Order::cmd_closeDAC});
+    cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});
+    cmdPool.push_back({"关闭基线采集",Order::cmd_closeBLSamlpe});
+    cmdPool.push_back({"复位寄存器",Order::cmd_resetRegister});
+    cmdPool.push_back({"关闭温度监测",Order::cmd_closeTempMonitor});
 
     workStatus = Preparing;
-    send(cmdPool.first());
-    logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
+    send(cmdPool.first().data);
+    logger->debug(QString("Send HEX: %1 (%2)")
+                      .arg(QString(cmdPool.first().data.toHex(' ')))
+                      .arg(cmdPool.first().name));
 }
 
 //采集基线
@@ -111,11 +113,13 @@ void CommandHelper::baseLineSample_manual()
 {
     cmdPool.clear();
 
-    cmdPool.push_back(Order::cmd_openBLSamlpe);
+    cmdPool.push_back({"打开基线采集", Order::cmd_openBLSamlpe});
 
     workStatus = BLSampleing_manual;
-    send(cmdPool.first());
-    logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
+    send(cmdPool.first().data);
+    logger->debug(QString("Send HEX: %1 (%2)")
+                      .arg(QString(cmdPool.first().data.toHex(' ')))
+                      .arg(cmdPool.first().name));
 }
 
 void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeBLSample mode_BLsample)
@@ -123,22 +127,26 @@ void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeB
     m_modeBLSample = mode_BLsample;
     cmdPool.clear();
 
-    cmdPool.push_back(Order::cmd_closePower);
-    cmdPool.push_back(Order::cmd_closeDAC);
-    cmdPool.push_back(Order::cmd_closeHardTrigger);
-    cmdPool.push_back(Order::cmd_closeBLSamlpe);
-    cmdPool.push_back(Order::cmd_resetRegister);
-    cmdPool.push_back(Order::cmd_closeTempMonitor);
+    cmdPool.push_back({"关闭电源", Order::cmd_closePower});
+    cmdPool.push_back({"关闭DAC", Order::cmd_closeDAC});
+    cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});
+    cmdPool.push_back({"关闭基线采样", Order::cmd_closeBLSamlpe});
+    cmdPool.push_back({"复位寄存器", Order::cmd_resetRegister});
+    cmdPool.push_back({"关闭温度监测", Order::cmd_closeTempMonitor});
 
     //setting.json文件中的设置
     QJsonObject jsonSetting = CommonUtils::ReadSetting();
     try {
         jsonConfig_FPGA = CommonUtils::loadUserConfig();
         // cmdPool.push_back(Order::getTempMonitorGap(jsonConfig_FPGA.TempMonitorGap));//当前温度监测模块没有，所以不支持该指令。
-        cmdPool.push_back(Order::getTriggerWidth(jsonConfig_FPGA.TriggerWidth));
-        cmdPool.push_back(Order::getClockFrequency(jsonConfig_FPGA.clockFrequency));
-        cmdPool.push_back(Order::getHLpoint(jsonConfig_FPGA.HLpoint));
-        cmdPool.push_back(Order::getTimesTrigger(jsonConfig_FPGA.timesTrigger));
+        cmdPool.push_back({QString("设置同步触发宽度%1").arg(jsonConfig_FPGA.TriggerWidth),
+                           Order::getTriggerWidth(jsonConfig_FPGA.TriggerWidth)});
+        cmdPool.push_back({QString("配置移位寄存器时钟频率%1").arg(jsonConfig_FPGA.clockFrequency),
+                           Order::getClockFrequency(jsonConfig_FPGA.clockFrequency)});
+        cmdPool.push_back({QString("配置硬件触发高电平点数%1").arg(jsonConfig_FPGA.HLpoint),
+                           Order::getHLpoint(jsonConfig_FPGA.HLpoint)});
+        cmdPool.push_back({QString("配置同步触发次数%1").arg(jsonConfig_FPGA.timesTrigger),
+                           Order::getTimesTrigger(jsonConfig_FPGA.timesTrigger)});
     }
     catch (const std::exception &e) {
         QMessageBox::critical(NULL, "配置错误", e.what());
@@ -148,16 +156,27 @@ void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeB
     }
 
     // 界面的FPGA参数设置
-    cmdPool.push_back(Order::getLEDWidth(config.LEDWidth));
-    cmdPool.push_back(Order::getLightDelayTimeA(config.LightDelayTime));
-    cmdPool.push_back(Order::getLightDelayTimeB(config.LightDelayTime));
-    cmdPool.push_back(Order::getTriggerDelayTimeA(config.TriggerDelayTime));
-    cmdPool.push_back(Order::getTriggerDelayTimeB(config.TriggerDelayTime));
-    cmdPool.push_back(Order::getTimesLED(config.timesLED));
+    cmdPool.push_back({QString("配置LED发光宽度%1").arg(config.LEDWidth), Order::getLEDWidth(config.LEDWidth)});
+    cmdPool.push_back({QString("配置LED发光延迟时间%1").arg(config.LightDelayTime), Order::getLightDelayTimeA(config.LightDelayTime)});
+    cmdPool.push_back({QString("配置LED发光延迟时间%1").arg(config.LightDelayTime), Order::getLightDelayTimeB(config.LightDelayTime)});
+    cmdPool.push_back({QString("配置同步触发延迟时间%1").arg(config.TriggerDelayTime), Order::getTriggerDelayTimeA(config.TriggerDelayTime)});
+    cmdPool.push_back({QString("配置同步触发延迟时间%1").arg(config.TriggerDelayTime), Order::getTriggerDelayTimeB(config.TriggerDelayTime)});
+    cmdPool.push_back({QString("配置LED发光次数%1").arg(config.timesLED), Order::getTimesLED(config.timesLED)});
+
+    cmdPool.push_back({QString("配置移位寄存器A，二进制%1，发光位置")
+                            .arg(QString::number(config.RegisterA, 2).rightJustified(16, '0')),
+                            Order::getRegisterConfigA(config.RegisterA)});
+    cmdPool.push_back({QString("配置移位寄存器B，二进制%1，发光位置")
+                            .arg(QString::number(config.RegisterB, 2).rightJustified(16, '0')),
+                            Order::getRegisterConfigB(config.RegisterB)});
+
+    cmdPool.push_back({"开启移位寄存器配置", Order::cmd_openRegConfig});
 
     workStatus = ConfigBeforeLoop;
-    send(cmdPool.first());
-    logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
+    send(cmdPool.first().data);
+    logger->debug(QString("Send HEX: %1 (%2)")
+                      .arg(QString(cmdPool.first().data.toHex(' ')))
+                      .arg(cmdPool.first().name));
 }
 
 //进行一次测量
@@ -167,52 +186,57 @@ void CommandHelper::startOneLoop(CsvDataRow data)
     //配置DAC数据
     for(int i=0; i<10; i++)
     {
-        cmdPool.push_back(Order::getVoltConfig(i+1,data.dacValues[i]));
+        cmdPool.push_back({QString("配置DAC%1,数值%2").arg(i+1).arg(data.dacValues[i]), Order::getVoltConfig(i+1, data.dacValues[i])});
     }
-    //写入DAC数据
-    cmdPool.push_back(Order::cmd_writeDAC);
-    //开启电源
-    cmdPool.push_back(Order::cmd_openPower);
+
+    cmdPool.push_back({"写入DAC数据", Order::cmd_writeDAC});
+    cmdPool.push_back({"开启电源", Order::cmd_openPower});
 
     workStatus = LoopStep1;
-    send(cmdPool.first());
-    logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
+    send(cmdPool.first().data);
+    logger->debug(QString("Send HEX: %1 (%2)")
+                      .arg(QString(cmdPool.first().data.toHex(' ')))
+                      .arg(cmdPool.first().name));
 }
 
 void CommandHelper::resetFPGA_afterMeasure()
 {
     cmdPool.clear();
-    cmdPool.push_back(Order::cmd_closePower);
-    cmdPool.push_back(Order::cmd_closeDAC);
-    cmdPool.push_back(Order::cmd_closeHardTrigger);
-    cmdPool.push_back(Order::cmd_resetRegister);
+    cmdPool.push_back({"关闭电源", Order::cmd_closePower});
+    cmdPool.push_back({"关闭DAC配置", Order::cmd_closeDAC});
+    cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});
+    cmdPool.push_back({"复位移位寄存器", Order::cmd_resetRegister});
 
     if(m_modeBLSample == AutoBL){
-        cmdPool.push_back(Order::cmd_openBLSamlpe); //开启基线采集
+        cmdPool.push_back({"开启基线采集", Order::cmd_openBLSamlpe});
         workStatus = BLSampleing_auto;
     }
     else{
         workStatus = Resetting;
     }
-    send(cmdPool.first());
-    logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
+    send(cmdPool.first().data);
+    logger->debug(QString("Send HEX: %1 (%2)")
+                      .arg(QString(cmdPool.first().data.toHex(' ')))
+                      .arg(cmdPool.first().name));
 }
 
 void CommandHelper::stopMeasure()
 {
     cmdPool.clear();
 
-    cmdPool.push_back(Order::cmd_closePower);
-    cmdPool.push_back(Order::cmd_closeDAC);
-    cmdPool.push_back(Order::cmd_closeHardTrigger);//两次关闭硬件触发
-    cmdPool.push_back(Order::cmd_closeHardTrigger);//两次关闭硬件触发
-    cmdPool.push_back(Order::cmd_closeBLSamlpe);
-    cmdPool.push_back(Order::cmd_resetRegister);
-    cmdPool.push_back(Order::cmd_closeTempMonitor);
+    cmdPool.push_back({"关闭电源", Order::cmd_closePower});
+    cmdPool.push_back({"关闭DAC配置", Order::cmd_closeDAC});
+    cmdPool.push_back({"关闭硬件触发（1）", Order::cmd_closeHardTrigger});//两次关闭硬件触发
+    cmdPool.push_back({"关闭硬件触发（2）", Order::cmd_closeHardTrigger});//两次关闭硬件触发
+    cmdPool.push_back({"关闭基线采样", Order::cmd_closeBLSamlpe});
+    cmdPool.push_back({"复位移位寄存器", Order::cmd_resetRegister});
+    cmdPool.push_back({"关闭温度监测", Order::cmd_closeTempMonitor});
 
     workStatus = Stopping;
-    send(cmdPool.first());
-    logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
+    send(cmdPool.first().data);
+    logger->debug(QString("Send HEX: %1 (%2)")
+                      .arg(QString(cmdPool.first().data.toHex(' ')))
+                      .arg(cmdPool.first().name));
 }
 
 void CommandHelper::startWork()
@@ -293,12 +317,14 @@ void CommandHelper::handleData(QByteArray data)
     }
 
     // 判断接收指令与发送指令是否一致
-    QByteArray command = cmdPool.first();
-    // bool isCmdEqual = data.mid(5, 1).startsWith(command.mid(5, 1));
+    QByteArray command = cmdPool.first().data;
     bool isCmdEqual = (data == command);
     if (!isCmdEqual){
         if(cmdPool.size()>0){
-            send(cmdPool.first());
+            send(cmdPool.first().data);
+            logger->debug(QString("Send HEX: %1 (%2)")
+                              .arg(QString(cmdPool.first().data.toHex(' ')))
+                              .arg(cmdPool.first().name));
         }
         logger->debug(tr("返回指令与发送指令不一致"));
         emit sigRebackUnbale(); //异常终止测量
@@ -308,9 +334,10 @@ void CommandHelper::handleData(QByteArray data)
     cmdPool.erase(cmdPool.begin());
     if (cmdPool.size() > 0)
     {
-        //发送开始测量指令
-        send(cmdPool.first());
-        logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
+        send(cmdPool.first().data);
+        logger->debug(QString("Send HEX: %1 (%2)")
+                          .arg(QString(cmdPool.first().data.toHex(' ')))
+                          .arg(cmdPool.first().name));
     }
     else{
         switch(workStatus)
@@ -329,12 +356,15 @@ void CommandHelper::handleData(QByteArray data)
                 break;
             case LoopStep1:
                 //电压稳定时间
+                logger->debug(QString("电压稳定时间:%1ms").arg(jsonConfig_FPGA.PowerStableTime));
                 QThread::msleep(jsonConfig_FPGA.PowerStableTime);
 
                 //开启硬件触发
-                cmdPool.push_back(Order::cmd_HardTriggerOn);
-                send(cmdPool.first());
-                logger->debug(QString("Send HEX: %1").arg(QString(cmdPool.first().toHex(' '))));
+                cmdPool.push_back({"开启硬件触发", Order::cmd_HardTriggerOn});
+                send(cmdPool.first().data);
+                logger->debug(QString("Send HEX: %1 (%2)")
+                                  .arg(QString(cmdPool.first().data.toHex(' ')))
+                                  .arg(cmdPool.first().name));
                 workStatus = Looping;
                 break;
             case Resetting:

@@ -8,6 +8,18 @@
 #ifndef ORDER_H
 #define ORDER_H
 #include <QByteArray>
+#include <QString>
+
+struct CommandItem
+{
+    QString name;      // 指令名称（中文或英文描述）
+    QByteArray data;   // 实际发送的指令内容
+
+    CommandItem() {}
+    CommandItem(const QString &n, const QByteArray &d)
+        : name(n), data(d) {}
+};
+
 
 class Order
 {

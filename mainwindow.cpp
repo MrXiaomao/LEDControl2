@@ -210,7 +210,7 @@ void MainWindow::ConfigLog()
     // === 3️⃣ 添加 UI 日志附加器 ===
     uiAppender = new UiLogAppender(this);
     Log4Qt::PatternLayout *layout = new Log4Qt::PatternLayout();
-    layout->setConversionPattern("%d{yyyy-MM-dd HH:mm:ss} [%p] %m");//不换行，如果换行：("%d{yyyy-MM-dd HH:mm:ss} [%p] %m%n");
+    layout->setConversionPattern("%d{yyyy-MM-dd HH:mm:ss.zzz} [%p] %m");//不换行，如果换行：("%d{yyyy-MM-dd HH:mm:ss} [%p] %m%n");
     layout->activateOptions();
 
     uiAppender->setLayout(layout);
@@ -334,8 +334,8 @@ void MainWindow::loadUiConfigFromJson()
     ui->checkB_all->setChecked(allB);
 
     // === 基线采集模式控件 ===
-    int modeBL = uiJson.value("BLSample_mode").toInt(0);
-    m_BLmode = modeBL==0?ManualBL:AutoBL;
+    bool modeBL = uiJson.value("BLSample_auto").toBool(true);
+    m_BLmode = modeBL?AutoBL:ManualBL;
     ui->radioButton_auto->setChecked(m_BLmode==AutoBL);
 
     // === 文件选择 ===
@@ -361,7 +361,7 @@ void MainWindow::saveUiConfigToJson()
     uiJson["IntensityLeft"]     = ui->doubleSpinBox_loopStart->value();
     uiJson["IntensityRight"]    = ui->doubleSpinBox_loopEnd->value();
     uiJson["loop_file"]         = ui->lEdit_File->text();
-    uiJson["BLSample_mode"]     = ui->radioButton_auto->isChecked();
+    uiJson["BLSample_auto"]     = ui->radioButton_auto->isChecked();
 
     // 同时保存勾选框状态
     uiJson["checkValueA"] = m_RegisterA;
@@ -662,6 +662,8 @@ void MainWindow::on_bt_startLoop_clicked()
         config.LightDelayTime = ui->spinBox_lightDelayTime->value();
         config.TriggerDelayTime = ui->spinBox_TriggerDelayTime->value();
         config.timesLED = ui->spinBox_timesLED->value();
+        config.RegisterA = m_RegisterA;
+        config.RegisterB = m_RegisterB;
 
         double intensityLeft = ui->doubleSpinBox_loopStart->value();
         double intensityRight = ui->doubleSpinBox_loopEnd->value();

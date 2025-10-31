@@ -39,6 +39,8 @@ namespace CommonUtils {
         int LightDelayTime = 1000;  // LED发光延迟时间，单位为ns，必须10的整数倍，上限10ms(1E7ns),
         int TriggerDelayTime = 1000;// 同步触发延迟时间(int数值低八位)，单位为ns，必须10的整数倍
         int timesLED = 10;          // LED发光次数
+        unsigned short RegisterA; //移位寄存器A，发光位置
+        unsigned short RegisterB; //移位寄存器B，发光位置
     };
 
     //新增读取并校验函数读取"User"组数值。

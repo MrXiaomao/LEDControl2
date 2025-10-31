@@ -1,6 +1,6 @@
 {
     "UI": {
-        "BLSample_mode": true,
+        "BLSample_auto": true,
         "IntensityLeft": 10,
         "IntensityRight": 200,
         "LEDWidth": 20,

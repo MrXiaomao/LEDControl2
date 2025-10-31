@@ -184,15 +184,19 @@ QByteArray Order::getTimesTrigger(unsigned short times)
     return tempcmd;
 }
 
-QByteArray Order::getRegisterConfigA(unsigned short type)
+QByteArray Order::getRegisterConfigA(unsigned short value)
 {
     QByteArray tempcmd = cmd_registerConfigA;
+    tempcmd[2] = static_cast<quint8>((value >> 8) & 0xFF);
+    tempcmd[3] = static_cast<quint8>(value & 0xFF);
     return tempcmd;
 }
 
-QByteArray Order::getRegisterConfigB(unsigned short type)
+QByteArray Order::getRegisterConfigB(unsigned short value)
 {
     QByteArray tempcmd = cmd_registerConfigB;
+    tempcmd[2] = static_cast<quint8>((value >> 8) & 0xFF);
+    tempcmd[3] = static_cast<quint8>(value & 0xFF);
     return tempcmd;
 }
 

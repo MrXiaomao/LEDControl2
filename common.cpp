@@ -73,13 +73,13 @@ CommonUtils::UserConfig CommonUtils::loadUserConfig()
     config.HLpoint         = user.value("HLpoint").toInt(1);
     config.timesTrigger    = user.value("timesTrigger").toInt(1000);
 
-    qInfo() << "  User 配置加载成功:";
-    qInfo() << "   PowerStableTime =" << config.PowerStableTime;
-    qInfo() << "   TempMonitorGap  =" << config.TempMonitorGap;
-    qInfo() << "   TriggerWidth    =" << config.TriggerWidth;
-    qInfo() << "   clockFrequency  =" << config.clockFrequency;
-    qInfo() << "   HLpoint         =" << config.HLpoint;
-    qInfo() << "   timesTrigger    =" << config.timesTrigger;
+    qDebug() << "  User 配置加载成功:";
+    qDebug() << "   PowerStableTime =" << config.PowerStableTime;
+    qDebug() << "   TempMonitorGap  =" << config.TempMonitorGap;
+    qDebug() << "   TriggerWidth    =" << config.TriggerWidth;
+    qDebug() << "   clockFrequency  =" << config.clockFrequency;
+    qDebug() << "   HLpoint         =" << config.HLpoint;
+    qDebug() << "   timesTrigger    =" << config.timesTrigger;
 
     return config;
 }

@@ -12,6 +12,7 @@
 #include <QMutex>
 #include "common.h"
 #include <log4qt/logger.h>
+#include "order.h"
 
 #include <QObject>
 #include "CSerialPort/SerialPort.h"
@@ -104,7 +105,7 @@ signals:
 private:
     Log4Qt::Logger *logger;   // 日志
     CSerialPort m_SerialPort;
-    QVector<QByteArray> cmdPool;
+    QVector<CommandItem> cmdPool;
     QByteArray cachePool;
     QLiteThread* NetDataThread;//处理网络数据线程
     bool taskFinished = false;
