@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-10-26 10:14:52
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-10-30 23:01:21
+ * @LastEditTime: 2025-11-09 21:37:06
  * @Description: 请填写简介
  */
 #include "mainwindow.h"
@@ -551,6 +551,7 @@ void MainWindow::slot_finishedOneLoop()
     }
     else{
         logger->info("完成所有循环");
+        ui->bt_startLoop->setText("开始循环");
         UIcontrolEnable(true);
         ui->bt_startLoop->setEnabled(true);
     }
@@ -558,6 +559,10 @@ void MainWindow::slot_finishedOneLoop()
 
 void MainWindow::UIcontrolEnable(bool flag)
 {
+    ui->pushButtonOpen->setEnabled(flag);
+    ui->bt_refreshPort->setEnabled(flag);
+    ui->comboBoxPortName->setEnabled(flag);
+
     ui->spinBox_LEDWidth->setEnabled(flag);
     ui->spinBox_lightDelayTime->setEnabled(flag);
     ui->spinBox_TriggerDelayTime->setEnabled(flag);
@@ -684,11 +689,15 @@ void MainWindow::on_bt_startLoop_clicked()
         }
         logger->info(QString("循环的光强区间：%1~%2").arg(intensityLeft).arg(intensityRight));
         commManager->setConfigBeforeLoop(config, m_BLmode);
+        ui->bt_kernelReset->setEnabled(false);
+        ui->bt_startLoop->setText("停止循环");
     }
     else{ //停止测量
         commManager->stopMeasure();
+        UIcontrolEnable(true);
         ui->bt_startLoop->setEnabled(false);
-        ui->bt_startLoop->setText("停止循环");
+        ui->bt_kernelReset->setEnabled(true);
+        ui->bt_startLoop->setText("开始循环");
     }
 }
 
@@ -939,5 +948,77 @@ void MainWindow::on_bt_baseLineSample_clicked()
 void MainWindow::on_bt_refreshPort_clicked()
 {
     refreshSerialPort();
+}
+
+
+void MainWindow::on_BaglosttestButton_clicked()
+{
+    // 使用文件对话框让用户选择文件
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        "选择日志文件",
+        "C:/Users/25368/Desktop",  // 默认指向桌面
+        "日志文件 (*.log *.txt);;所有文件 (*.*)"
+        );
+
+    if (filePath.isEmpty()) {
+        QMessageBox::warning(this, "警告", "未选择文件！");
+        return;
+    }
+
+    // 转换QString为std::string
+    std::string filename = filePath.toLocal8Bit().constData();
+
+    // 解析文件
+    if (parser.parseLogFile(filename)) {
+        // 计算丢包率
+        double lossRate = parser.calculatePacketLossRate() * 100;
+
+        // 构建完整的显示内容
+        QString result;
+        result += "=== 日志分析结果 ===\n\n";
+        result += QString("总数据组数: %1\n").arg(parser.getTotalPairs());
+        result += QString("丢包次数: %1\n").arg(parser.getLostPackets());
+        result += QString("丢包率: %1%\n\n").arg(lossRate, 0, 'f', 2);
+        result += "=== 详细数据 ===\n\n";
+
+        // 添加所有数据对的详细信息
+        const auto& pairs = parser.getHexPairs();
+        for (size_t i = 0; i < pairs.size(); ++i) {
+            const auto& pair = pairs[i];
+
+            result += QString("组 %1").arg(i + 1);
+
+            // 添加时间戳（如果不为空）
+            if (!pair.timestamp.empty()) {
+                result += QString(" [%1]").arg(QString::fromStdString(pair.timestamp));
+            }
+
+            // 添加匹配状态
+            result += QString(": %1\n").arg(pair.isMatched ? "[OK] 匹配" : "[ERR] 不匹配");
+
+            // 添加发送和接收数据
+            result += QString("  发送: %1\n").arg(QString::fromStdString(pair.sendHex));
+            result += QString("  接收: %1\n").arg(QString::fromStdString(pair.recvHex));
+
+            // 如果不匹配，添加警告
+            if (!pair.isMatched) {
+                result += "  [警告] 数据不匹配！\n";
+            }
+
+            result += "\n"; // 组间空行
+        }
+
+        // 创建消息框显示完整结果
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle("丢包率分析结果");
+        msgBox.setText("分析完成！");
+        msgBox.setDetailedText(result);
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.exec();
+
+    } else {
+        QMessageBox::critical(this, "错误", "文件解析失败！请检查文件路径和格式。");
+    }
 }
 

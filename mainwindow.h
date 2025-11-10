@@ -1,9 +1,16 @@
+/*
+ * @Author: MrPan
+ * @Date: 2025-11-09 20:44:23
+ * @LastEditors: Maoxiaoqing
+ * @LastEditTime: 2025-11-09 21:37:24
+ * @Description: 请填写简介
+ */
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>
 #include <QDateTime>
-
+#include "logparser.h"
 
 // #include "CSerialPort/SerialPort.h"
 // #include "CSerialPort/SerialPortInfo.h"
@@ -42,6 +49,7 @@ private:
 signals:
 
 private slots:
+    void on_BaglosttestButton_clicked();
     void btnSelectFile_clicked();
     void onLogMessage(const QString& message); // 新增日志槽函数
     void OnUpdateReceive(QString str);
@@ -69,7 +77,9 @@ private slots:
 
     void on_bt_refreshPort_clicked();
 
+
 private:
+    LogParser parser;
     Ui::MainWindow *ui;
     Log4Qt::Logger *logger; // Log4Qt日志器
     UiLogAppender *uiAppender; // UI日志附加器

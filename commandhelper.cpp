@@ -138,15 +138,16 @@ void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeB
     QJsonObject jsonSetting = CommonUtils::ReadSetting();
     try {
         jsonConfig_FPGA = CommonUtils::loadUserConfig();
-        // cmdPool.push_back(Order::getTempMonitorGap(jsonConfig_FPGA.TempMonitorGap));//当前温度监测模块没有，所以不支持该指令。
+        cmdPool.push_back({QString("温度监测时间间隔%1").arg(jsonConfig_FPGA.TempMonitorGap),
+                            Order::getTempMonitorGap(jsonConfig_FPGA.TempMonitorGap)});
         cmdPool.push_back({QString("设置同步触发宽度%1").arg(jsonConfig_FPGA.TriggerWidth),
-                           Order::getTriggerWidth(jsonConfig_FPGA.TriggerWidth)});
+                            Order::getTriggerWidth(jsonConfig_FPGA.TriggerWidth)});
         cmdPool.push_back({QString("配置移位寄存器时钟频率%1").arg(jsonConfig_FPGA.clockFrequency),
-                           Order::getClockFrequency(jsonConfig_FPGA.clockFrequency)});
+                            Order::getClockFrequency(jsonConfig_FPGA.clockFrequency)});
         cmdPool.push_back({QString("配置硬件触发高电平点数%1").arg(jsonConfig_FPGA.HLpoint),
-                           Order::getHLpoint(jsonConfig_FPGA.HLpoint)});
+                            Order::getHLpoint(jsonConfig_FPGA.HLpoint)});
         cmdPool.push_back({QString("配置同步触发次数%1").arg(jsonConfig_FPGA.timesTrigger),
-                           Order::getTimesTrigger(jsonConfig_FPGA.timesTrigger)});
+                            Order::getTimesTrigger(jsonConfig_FPGA.timesTrigger)});
     }
     catch (const std::exception &e) {
         QMessageBox::critical(NULL, "配置错误", e.what());
@@ -312,6 +313,18 @@ void CommandHelper::handleData(QByteArray data)
             double temp = (data[2]&0XFF00 + data[3])*0.0078125; //单位℃
             logger->info(QString("温度4:%1").arg(temp));
             sigUpdateTemp(4, temp);
+        }
+        else
+        {
+            QByteArray command = cmdPool.first().data;
+            bool isCmdEqual = (data == command);
+            if (!isCmdEqual){
+                logger->debug(tr("返回指令与发送指令不一致"));
+                send(cmdPool.first().data);
+                logger->debug(QString("Send HEX: %1 (%2)")
+                                  .arg(QString(cmdPool.first().data.toHex(' ')))
+                                  .arg(cmdPool.first().name));
+            }
         }
         return;
     }

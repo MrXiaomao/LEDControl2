@@ -11,6 +11,7 @@ CONFIG += c++17
 SOURCES += \
     commandhelper.cpp \
     common.cpp \
+    logparser.cpp \
     main.cpp \
     mainwindow.cpp \
     order.cpp \
@@ -19,6 +20,7 @@ SOURCES += \
 HEADERS += \
     commandhelper.h \
     common.h \
+    logparser.h \
     mainwindow.h \
     order.h \
     qlitethread.h \
