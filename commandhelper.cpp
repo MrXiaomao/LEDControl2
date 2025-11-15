@@ -316,25 +316,25 @@ void CommandHelper::handleData(QByteArray data)
         }
         else if(data.left(2) ==cmd_temp1.left(2)) //采集温度数据
         {
-            double temp = (data[2]&0XFF00 + data[3])*0.0078125; //单位℃
+            double temp = ((data[2] & 0xFF) << 8 | (data[3] & 0xFF)) * 0.0078125; //单位℃
             logger->info(QString("温度1:%1").arg(temp));
             sigUpdateTemp(1, temp);
         }
         else if(data.left(2) ==cmd_temp2.left(2)) //采集温度数据
         {
-            double temp = (data[2]&0XFF00 + data[3])*0.0078125; //单位℃
+            double temp = ((data[2] & 0xFF) << 8 | (data[3] & 0xFF)) * 0.0078125; //单位℃
             logger->info(QString("温度2:%1").arg(temp));
             sigUpdateTemp(2, temp);
         }
         else if(data.left(2) ==cmd_temp3.left(2)) //采集温度数据
         {
-            double temp = (data[2]&0XFF00 + data[3])*0.0078125; //单位℃
+            double temp = ((data[2] & 0xFF) << 8 | (data[3] & 0xFF)) * 0.0078125; //单位℃
             logger->info(QString("温度3:%1").arg(temp));
             sigUpdateTemp(3, temp);
         }
         else if(data.left(2) ==cmd_temp4.left(2)) //采集温度数据
         {
-            double temp = (data[2]&0XFF00 + data[3])*0.0078125; //单位℃
+            double temp = ((data[2] & 0xFF) << 8 | (data[3] & 0xFF)) * 0.0078125; //单位℃
             logger->info(QString("温度4:%1").arg(temp));
             sigUpdateTemp(4, temp);
         }
