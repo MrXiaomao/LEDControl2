@@ -117,6 +117,7 @@ private:
     ModeBLSample m_modeBLSample; //是否自动采集基线
     CommonUtils::UserConfig jsonConfig_FPGA;
     bool stopFlag = false; //用于循环测量中中断测量的标志位。
+    bool mReceiveTriger = false; //标志位，用于确定是否接收到开启硬件触发指令
 };
 
 #endif // COMMANDHELPER_H

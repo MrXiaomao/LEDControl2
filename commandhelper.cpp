@@ -125,6 +125,8 @@ void CommandHelper::baseLineSample_manual()
 void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeBLSample mode_BLsample)
 {
     stopFlag = false;
+    mReceiveTriger = false;
+    
     m_modeBLSample = mode_BLsample;
     cmdPool.clear();
 
@@ -225,8 +227,8 @@ void CommandHelper::resetFPGA_afterMeasure()
 void CommandHelper::insertStopMeasure()
 {
     stopFlag = true;
-    //如果此时已经处于Looping中，则直接进入停止，否则下一阶段进入Looping再停止
-    if(stopFlag && workStatus == Looping) {
+    //如果此时已经处于Looping中,并且接受硬件触发反馈指令，则直接进入停止，否则下一阶段进入Looping再停止
+    if(stopFlag && workStatus == Looping && mReceiveTriger) {
         stopMeasure();
         stopFlag = false;
     }
@@ -304,6 +306,11 @@ void CommandHelper::handleData(QByteArray data)
         if(stopFlag) {
             stopMeasure();
             stopFlag = false;
+        }
+
+        if(data == Order::cmd_HardTriggerOn)
+        {
+            mReceiveTriger = true;
         }
         QByteArray cmd_temp1 = QByteArray("\x12\xF1\x00\x00\xDD", 5);
         QByteArray cmd_temp2 = QByteArray("\x12\xF2\x00\x00\xDD", 5);
@@ -403,6 +410,7 @@ void CommandHelper::handleData(QByteArray data)
                                   .arg(QString(cmdPool.first().data.toHex(' ')))
                                   .arg(cmdPool.first().name));
                 workStatus = Looping;
+                mReceiveTriger = false;
                 break;
             case Resetting:
                 emit sigFinishCurrentloop();
