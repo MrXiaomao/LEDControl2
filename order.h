@@ -44,10 +44,10 @@ public:
     static QByteArray cmd_LEDWidth;
     //9、配置同步触发宽度，其中XX XX为16进制数，单位为×10ns，例如300ns对应的指令为：12 02 00 1E DD
     static QByteArray cmd_TriggerWidth;
-    //10、配置LED发光延迟时间,其中XX XX和YY YY为16进制数，单位10ns，默认1μs，上限10ms
+    //10、配置LED发光延迟时间,其中XX XX和YY YY为16进制数，单位*10ns，默认1μs，上限10ms
     static QByteArray cmd_LightDelayTimeA;
     static QByteArray cmd_LightDelayTimeB;
-    //11、配置同步触发延迟时间,其中XX XX和YY YY为16进制数，单位10ns，默认1μs，上限10ms
+    //11、配置同步触发延迟时间,其中XX XX和YY YY为16进制数，单位*10ns，默认1μs，上限10ms
     static QByteArray cmd_TriggerDelayTimeA;
     static QByteArray cmd_TriggerDelayTimeB;
     //12、配置移位寄存器时钟频率，单位10ns。
@@ -83,27 +83,27 @@ public:
     //温度监测时间间隔，s，范围1-A
     static QByteArray getTempMonitorGap(unsigned char deltaT);
 
-    //LED发光宽度，输入单位为ns，例如300ns对应：00 1E
+    //LED发光宽度，输入单位为*10ns，例如300ns对应：00 1E
     static QByteArray getLEDWidth(unsigned short width);
 
-    //同步触发宽度，单位为ns，例如300ns对应：00 1E
-    static QByteArray getTriggerWidth(unsigned short width=300);
+    //同步触发宽度，单位为*10ns，例如300ns对应：00 1E
+    static QByteArray getTriggerWidth(unsigned short width=30);
 
-    //LED发光延迟时间(int数值低八位)，单位为ns，上限10ms(1E7ns), 例如300ns对应：00 1E
-    static QByteArray getLightDelayTimeA(unsigned int delaytime = 1000);
-    //LED发光延迟时间(int数值高八位)，单位为ns，上限10ms(1E7ns)，例如300ns对应：00 1E
-    static QByteArray getLightDelayTimeB(unsigned int delaytime = 1000);
+    //LED发光延迟时间(int数值低八位)，单位为*10ns，上限10ms(1E7ns), 例如300ns对应：00 1E
+    static QByteArray getLightDelayTimeA(unsigned int delaytime = 100);
+    //LED发光延迟时间(int数值高八位)，单位为*10ns，上限10ms(1E7ns)，例如300ns对应：00 1E
+    static QByteArray getLightDelayTimeB(unsigned int delaytime = 100);
 
-    //同步触发延迟时间(int数值低八位)，单位为ns，上限10ms(1E7ns), 例如300ns对应：00 1E
-    static QByteArray getTriggerDelayTimeA(unsigned int delaytime = 1000);
-    //同步触发延迟时间(int数值高八位)，单位为ns，上限10ms(1E7ns), 例如300ns对应：00 1E
-    static QByteArray getTriggerDelayTimeB(unsigned int delaytime = 1000);
+    //同步触发延迟时间(int数值低八位)，单位为*10ns，上限10ms(1E7ns), 例如300ns对应：00 1E
+    static QByteArray getTriggerDelayTimeA(unsigned int delaytime = 100);
+    //同步触发延迟时间(int数值高八位)，单位为*10ns，上限10ms(1E7ns), 例如300ns对应：00 1E
+    static QByteArray getTriggerDelayTimeB(unsigned int delaytime = 100);
 
-    //时钟频率,单位ns，默认10ns，必须是10的整数倍
-    static QByteArray getClockFrequency(unsigned short frequency = 10);
+    //时钟频率,单位*10ns，默认10ns，必须是10的整数倍
+    static QByteArray getClockFrequency(unsigned short frequency = 1);
 
-    //硬件触发高电平点数,单位ns，默认值10ns，不能为0
-    static QByteArray getHLpoint(unsigned char duratime = 10);
+    //硬件触发高电平点数,单位*10ns，默认值10ns，不能为0
+    static QByteArray getHLpoint(unsigned char duratime = 1);
 
     //LED发光次数,默认1000
     static QByteArray getTimesLED(unsigned short times = 1000);

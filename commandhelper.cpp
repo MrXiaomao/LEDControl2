@@ -157,11 +157,11 @@ void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeB
     }
 
     // 界面的FPGA参数设置
-    cmdPool.push_back({QString("配置LED发光宽度%1").arg(config.LEDWidth), Order::getLEDWidth(config.LEDWidth)});
-    cmdPool.push_back({QString("配置LED发光延迟时间%1").arg(config.LightDelayTime), Order::getLightDelayTimeA(config.LightDelayTime)});
-    cmdPool.push_back({QString("配置LED发光延迟时间%1").arg(config.LightDelayTime), Order::getLightDelayTimeB(config.LightDelayTime)});
-    cmdPool.push_back({QString("配置同步触发延迟时间%1").arg(config.TriggerDelayTime), Order::getTriggerDelayTimeA(config.TriggerDelayTime)});
-    cmdPool.push_back({QString("配置同步触发延迟时间%1").arg(config.TriggerDelayTime), Order::getTriggerDelayTimeB(config.TriggerDelayTime)});
+    cmdPool.push_back({QString("配置LED发光宽度%1ns").arg(config.LEDWidth*10), Order::getLEDWidth(config.LEDWidth)});
+    cmdPool.push_back({QString("配置LED发光延迟时间%1ns").arg(config.LightDelayTime*10), Order::getLightDelayTimeA(config.LightDelayTime)});
+    cmdPool.push_back({QString("配置LED发光延迟时间%1ns").arg(config.LightDelayTime*10), Order::getLightDelayTimeB(config.LightDelayTime)});
+    cmdPool.push_back({QString("配置同步触发延迟时间%1ns").arg(config.TriggerDelayTime*10), Order::getTriggerDelayTimeA(config.TriggerDelayTime)});
+    cmdPool.push_back({QString("配置同步触发延迟时间%1ns").arg(config.TriggerDelayTime*10), Order::getTriggerDelayTimeB(config.TriggerDelayTime)});
     cmdPool.push_back({QString("配置LED发光次数%1").arg(config.timesLED), Order::getTimesLED(config.timesLED)});
 
     cmdPool.push_back({QString("配置移位寄存器A，二进制%1，发光位置")
@@ -206,7 +206,7 @@ void CommandHelper::resetFPGA_afterMeasure()
     cmdPool.push_back({"关闭电源", Order::cmd_closePower});
     cmdPool.push_back({"关闭DAC配置", Order::cmd_closeDAC});
     cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});
-    cmdPool.push_back({"复位移位寄存器", Order::cmd_resetRegister});
+    // cmdPool.push_back({"复位移位寄存器", Order::cmd_resetRegister});
 
     if(m_modeBLSample == AutoBL){
         cmdPool.push_back({"开启基线采集", Order::cmd_openBLSamlpe});

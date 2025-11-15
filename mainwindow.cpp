@@ -92,6 +92,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(commManager, &CommandHelper::sigLoop_stoped, this, &MainWindow::slot_measureStoped, Qt::QueuedConnection);
     connect(commManager, &CommandHelper::sigUpdateTemp, this, &MainWindow::slot_updateTemp, Qt::QueuedConnection);
     connect(commManager, &CommandHelper::sigFinishCurrentloop, this, &MainWindow::slot_finishedOneLoop, Qt::QueuedConnection);
+    connect(commManager, &CommandHelper::sigBLSampleFinished, this, &MainWindow::onBaseLineSampleFinished, Qt::QueuedConnection);//手动基线采集
 
     // 2. （可选）关联选中状态变化的信号（两个单选按钮可共用一个槽函数）
     connect(ui->radioButton_auto, &QRadioButton::toggled,this, &MainWindow::onBLmodeToggled);
@@ -286,9 +287,9 @@ void MainWindow::loadUiConfigFromJson()
     }
 
     // === 整数控件 ===
-    ui->spinBox_LEDWidth->setValue(uiJson.value("LEDWidth").toInt(10));
-    ui->spinBox_lightDelayTime->setValue(uiJson.value("LightDelayTime").toInt(1000));
-    ui->spinBox_TriggerDelayTime->setValue(uiJson.value("TriggerDelayTime").toInt(1000));
+    ui->spinBox_LEDWidth->setValue(uiJson.value("LEDWidth").toInt(1));
+    ui->spinBox_lightDelayTime->setValue(uiJson.value("LightDelayTime").toInt(100));
+    ui->spinBox_TriggerDelayTime->setValue(uiJson.value("TriggerDelayTime").toInt(100));
     ui->spinBox_timesLED->setValue(uiJson.value("timesLED").toInt(1000));
 
     // === 浮点控件 ===
@@ -490,6 +491,7 @@ void MainWindow::slot_Reset_finished()
     ui->bt_startLoop->setEnabled(true);
     UIcontrolEnable(true);
 }
+
 void MainWindow::slot_config_finished() //循环前的参数配置已经完成
 {
     logger->info("参数配置完成");
@@ -550,10 +552,11 @@ void MainWindow::slot_finishedOneLoop()
         tempLEDdata.removeFirst();
     }
     else{
+        commManager->ressetFPGA();
         logger->info("完成所有循环");
         ui->bt_startLoop->setText("开始循环");
-        UIcontrolEnable(true);
-        ui->bt_startLoop->setEnabled(true);
+        // UIcontrolEnable(true);
+        // ui->bt_startLoop->setEnabled(true);
     }
 }
 
@@ -941,7 +944,20 @@ void MainWindow::on_bt_kernelReset_clicked()
 
 void MainWindow::on_bt_baseLineSample_clicked()
 {
+      // 立即禁用按钮并更新状态
+    ui->bt_baseLineSample->setEnabled(false);
+    ui->bt_baseLineSample->setText("基线采集中...");
+    
+    // 设置等待光标
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    
+    // 确保界面立即更新
+    QApplication::processEvents();
+    
+    // 开始基线采集
     commManager->baseLineSample_manual();
+    
+    logger->info("开始手动基线采集...");
 }
 
 
@@ -949,19 +965,35 @@ void MainWindow::on_bt_refreshPort_clicked()
 {
     refreshSerialPort();
 }
-
-
+//======================================================
+void MainWindow::onBaseLineSampleFinished()
+{
+    // 恢复按钮状态
+    ui->bt_baseLineSample->setEnabled(true);
+    ui->bt_baseLineSample->setText("采集基线");
+    
+    // 恢复光标
+    QApplication::restoreOverrideCursor();
+    
+    logger->info("手动基线采集完成");
+    
+    // 可选：显示完成提示
+    QMessageBox::information(this, "完成", "基线采集完成");
+}
+//========================================================
 void MainWindow::on_BaglosttestButton_clicked()
 {
     // 使用文件对话框让用户选择文件
-    QString filePath = QFileDialog::getOpenFileName(
+    QString filePath = QFileDialog::getOpenFileName
+        (
         this,
         "选择日志文件",
         "C:/Users/25368/Desktop",  // 默认指向桌面
         "日志文件 (*.log *.txt);;所有文件 (*.*)"
         );
 
-    if (filePath.isEmpty()) {
+    if (filePath.isEmpty())
+    {
         QMessageBox::warning(this, "警告", "未选择文件！");
         return;
     }
@@ -970,7 +1002,8 @@ void MainWindow::on_BaglosttestButton_clicked()
     std::string filename = filePath.toLocal8Bit().constData();
 
     // 解析文件
-    if (parser.parseLogFile(filename)) {
+    if (parser.parseLogFile(filename))
+    {
         // 计算丢包率
         double lossRate = parser.calculatePacketLossRate() * 100;
 
@@ -1009,14 +1042,49 @@ void MainWindow::on_BaglosttestButton_clicked()
             result += "\n"; // 组间空行
         }
 
-        // 创建消息框显示完整结果
-        QMessageBox msgBox(this);
-        msgBox.setWindowTitle("丢包率分析结果");
-        msgBox.setText("分析完成！");
-        msgBox.setDetailedText(result);
-        msgBox.setIcon(QMessageBox::Information);
-        msgBox.exec();
+        // 创建消息框显示完整结果 在这里添加
+    QDialog dialog(this);
+    dialog.setWindowTitle("丢包率分析结果");
+    dialog.setMinimumSize(1200, 900);  // 大尺寸显示框
+    QVBoxLayout *layout = new QVBoxLayout(&dialog);
+    // 标题
+    QLabel *titleLabel = new QLabel("丢包率分析报告", &dialog);
+    titleLabel->setStyleSheet("font-size: 20pt; font-weight: bold; color: #2c3e50; margin: 20px; text-align: center;");
+    layout->addWidget(titleLabel);
 
+    // 文本编辑框
+    QTextEdit *textEdit = new QTextEdit(&dialog);
+    textEdit->setPlainText(result);
+    textEdit->setReadOnly(true);
+    textEdit->setFont(QFont("Consolas", 11));  // 等宽字体，清晰显示
+    textEdit->setStyleSheet("background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 15px;");
+    layout->addWidget(textEdit);
+
+    // 按钮
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+    QPushButton *okButton = new QPushButton("确定", &dialog);
+    okButton->setFont(QFont("Microsoft YaHei", 12));
+    okButton->setStyleSheet
+        ("QPushButton { "
+        "background-color: #007bff; "
+         "color: white; "
+         "padding: 12px 24px; "
+         "border: none; "
+         "border-radius: 6px; "
+        "font-weight: bold; "
+        "min-width: 100px; "
+         "}"
+        "QPushButton:hover { "
+        "background-color: #0056b3; "
+        "}"
+        "QPushButton:pressed { "
+        "background-color: #004085; "
+        "}");
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(okButton);
+    layout->addLayout(buttonLayout);
+    connect(okButton, &QPushButton::clicked, &dialog, &QDialog::accept);
+    dialog.exec();
     } else {
         QMessageBox::critical(this, "错误", "文件解析失败！请检查文件路径和格式。");
     }

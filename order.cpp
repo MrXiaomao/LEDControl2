@@ -23,7 +23,7 @@ const QByteArray Order::cmd_closeDAC("\x12\x08\x00\x00\xDD", 5);
 const QByteArray Order::cmd_closeHardTrigger("\x12\x0D\x00\x01\xDD", 5);
 //4、关闭基线采集
 const QByteArray Order::cmd_closeBLSamlpe("\x12\x1D\x00\x01\xDD", 5);
-//5、复位
+//5、移位寄存器时钟和复位
 const QByteArray Order::cmd_resetRegister("\x12\x05\x00\x01\xDD", 5);
 //6、关闭温度监测
 const QByteArray Order::cmd_closeTempMonitor("\x12\x0A\x00\x00\xDD", 5);
@@ -33,10 +33,10 @@ QByteArray Order::cmd_TempPara("\x12\x09\x00\x01\xDD", 5);
 QByteArray Order::cmd_LEDWidth("\x12\x02\x00\x1E\xDD", 5);
 //9、配置同步触发宽度，其中XX XX为16进制数，单位为×10ns，例如300ns对应的指令为：12 02 00 1E DD
 QByteArray Order::cmd_TriggerWidth("\x12\x12\x00\x1E\xDD", 5);
-//10、配置LED发光延迟时间,其中XX XX和YY YY为16进制数，单位10ns，默认1μs，上限10ms
+//10、配置LED发光延迟时间,其中XX XX和YY YY为16进制数，单位x10ns，默认1μs，上限10ms
 QByteArray Order::cmd_LightDelayTimeA("\x12\x01\x00\x00\xDD", 5);
 QByteArray Order::cmd_LightDelayTimeB("\x12\x11\x00\x01\xDD", 5);
-//11、配置同步触发延迟时间,其中XX XX和YY YY为16进制数，单位10ns，默认1μs，上限10ms
+//11、配置同步触发延迟时间,其中XX XX和YY YY为16进制数，单位x10ns，默认1μs，上限10ms
 QByteArray Order::cmd_TriggerDelayTimeA("\x12\x21\x00\x00\xDD", 5);
 QByteArray Order::cmd_TriggerDelayTimeB("\x12\x31\x00\x00\xDD", 5);
 //12、配置移位寄存器时钟频率
@@ -81,8 +81,6 @@ QByteArray Order::getTempMonitorGap(unsigned char frequency)
 
 QByteArray Order::getLEDWidth(unsigned short width)
 {
-    //转化为x10ns的单位
-    width = width / 10;
     QByteArray tempcmd = cmd_LEDWidth;
     tempcmd[2] = static_cast<quint8>((width >> 8) & 0xFF);
     tempcmd[3] = static_cast<quint8>(width & 0xFF);
@@ -91,7 +89,6 @@ QByteArray Order::getLEDWidth(unsigned short width)
 
 QByteArray Order::getTriggerWidth(unsigned short width)
 {
-    width = width / 10;
     QByteArray tempcmd = cmd_TriggerWidth;
     tempcmd[2] = static_cast<quint8>((width >> 8) & 0xFF);
     tempcmd[3] = static_cast<quint8>(width & 0xFF);
@@ -100,10 +97,8 @@ QByteArray Order::getTriggerWidth(unsigned short width)
 
 QByteArray Order::getLightDelayTimeA(unsigned int delaytime)
 {
-    //上限10ms=1E7ns
-    if(delaytime>1E7) delaytime = 1E7;
-    //转化为x10ns的单位
-    delaytime = delaytime / 10;
+    //上限10ms=1E6*10ns
+    if(delaytime>1E6) delaytime = 1E6;
     QByteArray tempcmd = cmd_LightDelayTimeA;
     tempcmd[2] = static_cast<quint8>((delaytime >> 8) & 0xFF);
     tempcmd[3] = static_cast<quint8>(delaytime & 0xFF);
@@ -112,10 +107,9 @@ QByteArray Order::getLightDelayTimeA(unsigned int delaytime)
 
 QByteArray Order::getLightDelayTimeB(unsigned int delaytime)
 {
-    //上限10ms=1E7ns
-    if(delaytime>1E7) delaytime = 1E7;
+    //上限10ms=1E6*10ns
+    if(delaytime>1E6) delaytime = 1E6;
     //转化为x10ns的单位
-    delaytime = delaytime / 10;
     QByteArray tempcmd = cmd_LightDelayTimeB;
     tempcmd[2] = static_cast<quint8>((delaytime >> 24) & 0xFF);
     tempcmd[3] = static_cast<quint8>((delaytime >> 16) & 0xFF);
@@ -124,10 +118,8 @@ QByteArray Order::getLightDelayTimeB(unsigned int delaytime)
 
 QByteArray Order::getTriggerDelayTimeA(unsigned int delaytime)
 {
-    //上限10ms=1E7ns
-    if(delaytime>1E7) delaytime = 1E7;
-    //转化为x10ns的单位
-    delaytime = delaytime / 10;
+    //上限10ms=1E6*10ns
+    if(delaytime>1E6) delaytime = 1E6;
     QByteArray tempcmd = cmd_TriggerDelayTimeA;
     tempcmd[2] = static_cast<quint8>((delaytime >> 8) & 0xFF);
     tempcmd[3] = static_cast<quint8>(delaytime & 0xFF);
@@ -136,23 +128,17 @@ QByteArray Order::getTriggerDelayTimeA(unsigned int delaytime)
 
 QByteArray Order::getTriggerDelayTimeB(unsigned int delaytime)
 {
-    //上限10ms=1E7ns
-    if(delaytime>1E7) delaytime = 1E7;
-    //转化为x10ns的单位
-    delaytime = delaytime / 10;
+    //上限10ms=1E6*10ns
+    if(delaytime>1E6) delaytime = 1E6;
     QByteArray tempcmd = cmd_TriggerDelayTimeB;
     tempcmd[2] = static_cast<quint8>((delaytime >> 24) & 0xFF);
     tempcmd[3] = static_cast<quint8>((delaytime >> 16) & 0xFF);
     return tempcmd;
 }
 
-//时钟频率,单位ns，默认10ns，必须是10的整数倍
+//时钟频率,单位*10ns，默认1*10ns
 QByteArray Order::getClockFrequency(unsigned short frequency)
 {
-    //确保数值不小于10
-    if(frequency<10) frequency = 10;
-    //转化为x10ns的单位
-    frequency = frequency / 10;
     QByteArray tempcmd = cmd_clockFrequency;
     tempcmd[2] = static_cast<quint8>((frequency >> 8) & 0xFF);
     tempcmd[3] = static_cast<quint8>(frequency & 0xFF);

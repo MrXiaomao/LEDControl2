@@ -76,7 +76,9 @@ private slots:
     void onBLmodeToggled(bool checked);
 
     void on_bt_refreshPort_clicked();
-
+//=======================================
+    void onBaseLineSampleFinished();  // 新增：基线采集完成处理
+//=======================================
 
 private:
     LogParser parser;
