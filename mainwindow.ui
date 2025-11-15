@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1025</width>
-    <height>549</height>
+    <width>1157</width>
+    <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -94,7 +94,14 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="1">
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>触发延迟时间/10ns：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
            <widget class="QLineEdit" name="lineEdit_Temp1">
             <property name="enabled">
              <bool>true</bool>
@@ -123,23 +130,10 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="label_13">
+          <item row="6" column="1">
+           <widget class="QLineEdit" name="lineEdit_Temp3">
             <property name="text">
-             <string>温度：</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="label_12">
-            <property name="text">
-             <string>当前光强：</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             <string>无</string>
             </property>
            </widget>
           </item>
@@ -150,53 +144,17 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_9">
+          <item row="5" column="1">
+           <widget class="QLineEdit" name="lineEdit_Temp2">
             <property name="text">
-             <string>发光延迟时间/10ns：</string>
+             <string>无</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_5">
+          <item row="7" column="1">
+           <widget class="QLineEdit" name="lineEdit_Temp4">
             <property name="text">
-             <string>触发延迟时间/10ns：</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QLineEdit" name="lineEdit_LED_Intensity">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="text">
-             <string>0.0</string>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="spinBox_lightDelayTime">
-            <property name="minimum">
-             <number>1</number>
-            </property>
-            <property name="maximum">
-             <number>10000000</number>
-            </property>
-            <property name="singleStep">
-             <number>1</number>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QSpinBox" name="spinBox_TriggerDelayTime">
-            <property name="maximum">
-             <number>10000000</number>
-            </property>
-            <property name="singleStep">
-             <number>1</number>
+             <string>无</string>
             </property>
            </widget>
           </item>
@@ -213,24 +171,43 @@
             </property>
            </widget>
           </item>
-          <item row="7" column="1">
-           <widget class="QLineEdit" name="lineEdit_Temp3">
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_13">
             <property name="text">
-             <string>无</string>
+             <string>温度：</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
            </widget>
           </item>
-          <item row="6" column="1">
-           <widget class="QLineEdit" name="lineEdit_Temp2">
-            <property name="text">
-             <string>无</string>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="spinBox_lightDelayTime">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>10000000</number>
+            </property>
+            <property name="singleStep">
+             <number>1</number>
             </property>
            </widget>
           </item>
-          <item row="8" column="1">
-           <widget class="QLineEdit" name="lineEdit_Temp4">
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_9">
             <property name="text">
-             <string>无</string>
+             <string>发光延迟时间/10ns：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QSpinBox" name="spinBox_TriggerDelayTime">
+            <property name="maximum">
+             <number>10000000</number>
+            </property>
+            <property name="singleStep">
+             <number>1</number>
             </property>
            </widget>
           </item>
@@ -744,8 +721,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1025</width>
-     <height>24</height>
+     <width>1157</width>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">

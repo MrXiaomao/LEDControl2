@@ -54,8 +54,8 @@ public:
     //测量结束后恢复状态
     void resetFPGA_afterMeasure();
 
-    //停止测量
-    void stopMeasure();
+    // 插入停止测量的状态
+    void insertStopMeasure();
 
     //串口开始工作
     void startWork();
@@ -83,6 +83,9 @@ protected:
     };
 private:
     virtual void onReadEvent(const char *portName, unsigned int readBufferLen);
+
+    //停止测量
+    void stopMeasure();
 
 private slots:
     //处理接收数据
@@ -113,6 +116,7 @@ private:
     WorkStatusFlag workStatus = NoWork;
     ModeBLSample m_modeBLSample; //是否自动采集基线
     CommonUtils::UserConfig jsonConfig_FPGA;
+    bool stopFlag = false; //用于循环测量中中断测量的标志位。
 };
 
 #endif // COMMANDHELPER_H

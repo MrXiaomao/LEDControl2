@@ -80,6 +80,8 @@ private slots:
     void onBaseLineSampleFinished();  // 新增：基线采集完成处理
 //=======================================
 
+    void on_pushButton_4_clicked();
+
 private:
     LogParser parser;
     Ui::MainWindow *ui;

@@ -354,6 +354,7 @@ void MainWindow::saveUiConfigToJson()
 {
     QJsonObject json = CommonUtils::ReadSetting();
     QJsonObject uiJson = json.value("UI").toObject();
+    QJsonObject userJson = json.value("User").toObject();
 
     uiJson["LEDWidth"]          = ui->spinBox_LEDWidth->value();
     uiJson["LightDelayTime"]    = ui->spinBox_lightDelayTime->value();
@@ -363,12 +364,14 @@ void MainWindow::saveUiConfigToJson()
     uiJson["IntensityRight"]    = ui->doubleSpinBox_loopEnd->value();
     uiJson["loop_file"]         = ui->lEdit_File->text();
     uiJson["BLSample_auto"]     = ui->radioButton_auto->isChecked();
+    userJson["timesTrigger"]    = ui->spinBox_timesLED->value(); //与发光次数保持一致
 
     // 同时保存勾选框状态
     uiJson["checkValueA"] = m_RegisterA;
     uiJson["checkValueB"] = m_RegisterB;
 
     json["UI"] = uiJson;
+    json["User"] = userJson;
     CommonUtils::WriteSetting(json);
 
     logger->info("界面参数已保存到配置文件。");
@@ -661,6 +664,9 @@ void MainWindow::on_bt_startLoop_clicked()
     //开始循环
     if(ui->bt_startLoop->text() == "开始循环")
     {
+        //保存界面参数
+        saveUiConfigToJson();
+
         //禁用界面控件
         UIcontrolEnable(false);
 
@@ -695,11 +701,13 @@ void MainWindow::on_bt_startLoop_clicked()
         ui->bt_kernelReset->setEnabled(false);
         ui->bt_startLoop->setText("停止循环");
     }
-    else{ //停止测量
-        commManager->stopMeasure();
-        UIcontrolEnable(true);
-        ui->bt_startLoop->setEnabled(false);
-        ui->bt_kernelReset->setEnabled(true);
+    else{ 
+        //停止测量
+        commManager->insertStopMeasure();
+        // commManager->stopMeasure();
+        // UIcontrolEnable(true);
+        // ui->bt_startLoop->setEnabled(false);
+        // ui->bt_kernelReset->setEnabled(true);
         ui->bt_startLoop->setText("开始循环");
     }
 }
@@ -958,6 +966,8 @@ void MainWindow::on_bt_baseLineSample_clicked()
     commManager->baseLineSample_manual();
     
     logger->info("开始手动基线采集...");
+    UIcontrolEnable(false); //禁用控件
+    ui->bt_startLoop->setEnabled(false);
 }
 
 
@@ -977,6 +987,9 @@ void MainWindow::onBaseLineSampleFinished()
     
     logger->info("手动基线采集完成");
     
+    UIcontrolEnable(true); //恢复控件
+    ui->bt_startLoop->setEnabled(true);
+
     // 可选：显示完成提示
     QMessageBox::information(this, "完成", "基线采集完成");
 }
@@ -1088,5 +1101,11 @@ void MainWindow::on_BaglosttestButton_clicked()
     } else {
         QMessageBox::critical(this, "错误", "文件解析失败！请检查文件路径和格式。");
     }
+}
+
+
+void MainWindow::on_pushButton_4_clicked()
+{
+    ui->textEdit_Log->clear();
 }
 

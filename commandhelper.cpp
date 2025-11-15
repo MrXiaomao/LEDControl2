@@ -124,6 +124,7 @@ void CommandHelper::baseLineSample_manual()
 
 void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeBLSample mode_BLsample)
 {
+    stopFlag = false;
     m_modeBLSample = mode_BLsample;
     cmdPool.clear();
 
@@ -221,19 +222,38 @@ void CommandHelper::resetFPGA_afterMeasure()
                       .arg(cmdPool.first().name));
 }
 
+void CommandHelper::insertStopMeasure()
+{
+    stopFlag = true;
+    //如果此时已经处于Looping中，则直接进入停止，否则下一阶段进入Looping再停止
+    if(stopFlag && workStatus == Looping) {
+        stopMeasure();
+        stopFlag = false;
+    }
+}
+
 void CommandHelper::stopMeasure()
 {
     cmdPool.clear();
 
-    cmdPool.push_back({"关闭电源", Order::cmd_closePower});
-    cmdPool.push_back({"关闭DAC配置", Order::cmd_closeDAC});
     cmdPool.push_back({"关闭硬件触发（1）", Order::cmd_closeHardTrigger});//两次关闭硬件触发
     cmdPool.push_back({"关闭硬件触发（2）", Order::cmd_closeHardTrigger});//两次关闭硬件触发
+    cmdPool.push_back({"关闭电源", Order::cmd_closePower});
+    cmdPool.push_back({"关闭DAC配置", Order::cmd_closeDAC});
     cmdPool.push_back({"关闭基线采样", Order::cmd_closeBLSamlpe});
     cmdPool.push_back({"复位移位寄存器", Order::cmd_resetRegister});
     cmdPool.push_back({"关闭温度监测", Order::cmd_closeTempMonitor});
 
     workStatus = Stopping;
+    //注意发送第一次关闭硬件触发，一定无指令反馈
+    send(cmdPool.first().data);
+    logger->debug(QString("Send HEX: %1 (%2)")
+                      .arg(QString(cmdPool.first().data.toHex(' ')))
+                      .arg(cmdPool.first().name));
+    
+    cmdPool.erase(cmdPool.begin());
+    //延时发送，确保FPGA接受数据不粘包
+    QThread::msleep(50);               
     send(cmdPool.first().data);
     logger->debug(QString("Send HEX: %1 (%2)")
                       .arg(QString(cmdPool.first().data.toHex(' ')))
@@ -281,6 +301,10 @@ void CommandHelper::handleData(QByteArray data)
     //2、测量完成指令
     else if(workStatus == Looping)
     {
+        if(stopFlag) {
+            stopMeasure();
+            stopFlag = false;
+        }
         QByteArray cmd_temp1 = QByteArray("\x12\xF1\x00\x00\xDD", 5);
         QByteArray cmd_temp2 = QByteArray("\x12\xF2\x00\x00\xDD", 5);
         QByteArray cmd_temp3 = QByteArray("\x12\xF3\x00\x00\xDD", 5);
