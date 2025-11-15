@@ -13,7 +13,6 @@
 #include <QToolButton>
 #include <QMessageBox>
 #include <QDebug>
-#include "order.h"
 
 #include <log4qt/logger.h>
 #include <log4qt/patternlayout.h>
@@ -100,6 +99,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->checkA_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllAChanged);
     connect(ui->checkB_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllBChanged);
+
+    // 循环模式选择
+    connect(ui->radio_LoopAB, &QRadioButton::toggled, this, &MainWindow::onLoopTypeChanged);
+    connect(ui->radio_LoopA,  &QRadioButton::toggled, this, &MainWindow::onLoopTypeChanged);
+    connect(ui->radio_LoopB,  &QRadioButton::toggled, this, &MainWindow::onLoopTypeChanged);
 
     ConfigLog();
 
@@ -300,6 +304,23 @@ void MainWindow::loadUiConfigFromJson()
     int checkValueA = uiJson.value("checkValueA").toInt(0);
     int checkValueB = uiJson.value("checkValueB").toInt(0);
 
+    int loopTypeValue = uiJson.value("LoopType").toInt(0);
+    ModeLoop m_loopType = static_cast<ModeLoop>(loopTypeValue);
+    switch (m_loopType) {
+        case LoopAB:
+            ui->radio_LoopAB->setChecked(true);
+            break;
+        case LoopA:
+            ui->radio_LoopA->setChecked(true);
+            break;
+        case LoopB:
+            ui->radio_LoopB->setChecked(true);
+            break;
+        default:
+            ui->radio_LoopAB->setChecked(true);
+            break;
+    }
+
     // === 更新 A 组 ===
     for (int i = 0; i < m_checksA.size(); ++i) {
         int bitPos = m_bitMap[i];
@@ -369,6 +390,7 @@ void MainWindow::saveUiConfigToJson()
     // 同时保存勾选框状态
     uiJson["checkValueA"] = m_RegisterA;
     uiJson["checkValueB"] = m_RegisterB;
+    uiJson["LoopType"] = static_cast<int>(m_loopType);
 
     json["UI"] = uiJson;
     json["User"] = userJson;
@@ -574,6 +596,10 @@ void MainWindow::UIcontrolEnable(bool flag)
     ui->spinBox_TriggerDelayTime->setEnabled(flag);
     ui->spinBox_timesLED->setEnabled(flag);
 
+    ui->radio_LoopAB->setEnabled(flag);
+    ui->radio_LoopA->setEnabled(flag);
+    ui->radio_LoopB->setEnabled(flag);
+
     ui->checkA_all->setEnabled(flag);
     ui->checkB_all->setEnabled(flag);
 
@@ -667,6 +693,18 @@ void MainWindow::on_bt_startLoop_clicked()
         //保存界面参数
         saveUiConfigToJson();
 
+        switch (m_loopType) {
+        case LoopAB:
+            logger->info("设置循环模式：LoopAB");
+            break;
+        case LoopA:
+            logger->info("设置循环模式：LoopA");
+            break;
+        case LoopB:
+            logger->info("设置循环模式：LoopB");
+            break;
+        }
+
         //禁用界面控件
         UIcontrolEnable(false);
 
@@ -697,7 +735,7 @@ void MainWindow::on_bt_startLoop_clicked()
             return;
         }
         logger->info(QString("循环的光强区间：%1~%2").arg(intensityLeft).arg(intensityRight));
-        commManager->setConfigBeforeLoop(config, m_BLmode);
+        commManager->setConfigBeforeLoop(config, m_BLmode, m_loopType);
         ui->bt_kernelReset->setEnabled(false);
         ui->bt_startLoop->setText("停止循环");
     }
@@ -922,6 +960,19 @@ void MainWindow::onCheckAllBChanged(int state)
     disconnect(ui->checkB_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllBChanged);
     ui->checkB_all->setChecked(allChecked);
     connect(ui->checkB_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllBChanged);
+}
+
+void MainWindow::onLoopTypeChanged()
+{
+    if (ui->radio_LoopAB->isChecked()) {
+        m_loopType = LoopAB;
+    }
+    else if (ui->radio_LoopA->isChecked()) {
+        m_loopType = LoopA;
+    }
+    else if (ui->radio_LoopB->isChecked()) {
+        m_loopType = LoopB;
+    }
 }
 
 // 处理单选按钮选中状态变化（checked为true表示当前按钮被选中）

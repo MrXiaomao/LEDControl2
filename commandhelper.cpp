@@ -96,7 +96,9 @@ void CommandHelper::ressetFPGA()
 
     cmdPool.push_back({"关闭电源", Order::cmd_closePower});
     cmdPool.push_back({"关闭DAC配置", Order::cmd_closeDAC});
-    cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});
+    cmdPool.push_back({"关闭硬件触发[亮A、亮B、亮AB模式]", Order::cmd_closeHardTrigger});
+    cmdPool.push_back({"关闭硬件触发[只亮A模式]", Order::cmd_closeTriggerA});
+    cmdPool.push_back({"关闭硬件触发[只亮B模式]", Order::cmd_closeTriggerB});
     cmdPool.push_back({"关闭基线采集",Order::cmd_closeBLSamlpe});
     cmdPool.push_back({"复位寄存器",Order::cmd_resetRegister});
     cmdPool.push_back({"关闭温度监测",Order::cmd_closeTempMonitor});
@@ -122,17 +124,20 @@ void CommandHelper::baseLineSample_manual()
                       .arg(cmdPool.first().name));
 }
 
-void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeBLSample mode_BLsample)
+void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeBLSample mode_BLsample, ModeLoop mode_loop)
 {
+    m_loopType = mode_loop;
     stopFlag = false;
     mReceiveTriger = false;
-    
+
     m_modeBLSample = mode_BLsample;
     cmdPool.clear();
 
     cmdPool.push_back({"关闭电源", Order::cmd_closePower});
     cmdPool.push_back({"关闭DAC", Order::cmd_closeDAC});
-    cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});
+    cmdPool.push_back({"关闭硬件触发[亮A、亮B、亮AB模式]", Order::cmd_closeHardTrigger});
+    cmdPool.push_back({"关闭硬件触发[只亮A模式]", Order::cmd_closeTriggerA});
+    cmdPool.push_back({"关闭硬件触发[只亮B模式]", Order::cmd_closeTriggerB});
     cmdPool.push_back({"关闭基线采样", Order::cmd_closeBLSamlpe});
     cmdPool.push_back({"复位寄存器", Order::cmd_resetRegister});
     cmdPool.push_back({"关闭温度监测", Order::cmd_closeTempMonitor});
@@ -208,7 +213,9 @@ void CommandHelper::resetFPGA_afterMeasure()
     cmdPool.clear();
     cmdPool.push_back({"关闭电源", Order::cmd_closePower});
     cmdPool.push_back({"关闭DAC配置", Order::cmd_closeDAC});
-    cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});
+    cmdPool.push_back({"关闭硬件触发[亮A、亮B、亮AB模式]", Order::cmd_closeHardTrigger});
+    cmdPool.push_back({"关闭硬件触发[只亮A模式]", Order::cmd_closeTriggerA});
+    cmdPool.push_back({"关闭硬件触发[只亮B模式]", Order::cmd_closeTriggerB});
     // cmdPool.push_back({"复位移位寄存器", Order::cmd_resetRegister});
 
     if(m_modeBLSample == AutoBL){
@@ -237,9 +244,25 @@ void CommandHelper::insertStopMeasure()
 void CommandHelper::stopMeasure()
 {
     cmdPool.clear();
+    switch (m_loopType) {
+    case LoopAB:
+        cmdPool.push_back({"关闭硬件触发（1）", Order::cmd_closeHardTrigger});//两次关闭硬件触发
+        cmdPool.push_back({"关闭硬件触发（2）", Order::cmd_closeHardTrigger});//两次关闭硬件触发
+        cmdPool.push_back({"关闭A触发", Order::cmd_closeTriggerA});//关闭A触发
+        cmdPool.push_back({"关闭B触发", Order::cmd_closeTriggerB});//关闭B触发
+        break;
+    case LoopA:
+        cmdPool.push_back({"关闭B触发", Order::cmd_closeTriggerB});//关闭B触发
+        cmdPool.push_back({"关闭A触发", Order::cmd_closeTriggerA});//关闭A触发
+        cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});//两次关闭硬件触发
+        break;
+    case LoopB:
+        cmdPool.push_back({"关闭A触发", Order::cmd_closeTriggerA});//关闭A触发
+        cmdPool.push_back({"关闭B触发", Order::cmd_closeTriggerB});//关闭B触发
+        cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});//关闭硬件触发
+        break;
+    }
 
-    cmdPool.push_back({"关闭硬件触发（1）", Order::cmd_closeHardTrigger});//两次关闭硬件触发
-    cmdPool.push_back({"关闭硬件触发（2）", Order::cmd_closeHardTrigger});//两次关闭硬件触发
     cmdPool.push_back({"关闭电源", Order::cmd_closePower});
     cmdPool.push_back({"关闭DAC配置", Order::cmd_closeDAC});
     cmdPool.push_back({"关闭基线采样", Order::cmd_closeBLSamlpe});
@@ -247,15 +270,25 @@ void CommandHelper::stopMeasure()
     cmdPool.push_back({"关闭温度监测", Order::cmd_closeTempMonitor});
 
     workStatus = Stopping;
-    //注意发送第一次关闭硬件触发，一定无指令反馈
-    send(cmdPool.first().data);
-    logger->debug(QString("Send HEX: %1 (%2)")
-                      .arg(QString(cmdPool.first().data.toHex(' ')))
-                      .arg(cmdPool.first().name));
-    
-    cmdPool.erase(cmdPool.begin());
-    //延时发送，确保FPGA接受数据不粘包
-    QThread::msleep(50);               
+
+    switch (m_loopType) {
+    case LoopAB:
+        //注意发送第一次关闭硬件触发，一定无指令反馈
+        send(cmdPool.first().data);
+        logger->debug(QString("Send HEX: %1 (%2)")
+                        .arg(QString(cmdPool.first().data.toHex(' ')))
+                        .arg(cmdPool.first().name));
+        
+        cmdPool.erase(cmdPool.begin());
+        //延时发送，确保FPGA接受数据不粘包
+        QThread::msleep(50); 
+        break;
+    case LoopA:
+        break;
+    case LoopB:
+        break;
+    }
+
     send(cmdPool.first().data);
     logger->debug(QString("Send HEX: %1 (%2)")
                       .arg(QString(cmdPool.first().data.toHex(' ')))
@@ -266,10 +299,6 @@ void CommandHelper::startWork()
 {
     // 创建数据解析线程
     NetDataThread = new QLiteThread(this);
-    // NetDataThread->setObjectName("analyzeNetDataThread");
-    // NetDataThread->setWorkThreadProc([=](){
-    //     netFrameWorkThead();
-    // });
 }
 
 void CommandHelper::handleData(QByteArray data)
@@ -308,20 +337,50 @@ void CommandHelper::handleData(QByteArray data)
             stopFlag = false;
         }
 
-        if(data == Order::cmd_HardTriggerOn)
-        {
-            mReceiveTriger = true;
+        switch (m_loopType) {
+        case LoopAB:
+            if(data == Order::cmd_TriggerAB_On) mReceiveTriger = true;
+            break;
+        case LoopA:
+            if(data == Order::cmd_TriggerA_On) mReceiveTriger = true;
+            break;
+        case LoopB:
+            if(data == Order::cmd_TriggerB_On) mReceiveTriger = true;
+            break;
         }
+
+        switch (m_loopType) {
+        case LoopAB:
+            if(data == Order::cmd_measureFinishAB) 
+            {
+                logger->debug("接受到测量完成指令");
+                resetFPGA_afterMeasure();
+                return;
+            }
+            break;
+        case LoopA:
+            if(data == Order::cmd_measureFinishA) 
+            {
+                logger->debug("接受到测量完成指令");
+                resetFPGA_afterMeasure();
+                return;
+            }
+            break;
+        case LoopB:
+            if(data == Order::cmd_measureFinishB) 
+            {
+                logger->debug("接受到测量完成指令");
+                resetFPGA_afterMeasure();
+                return;
+            }
+            break;
+        }
+
         QByteArray cmd_temp1 = QByteArray("\x12\xF1\x00\x00\xDD", 5);
         QByteArray cmd_temp2 = QByteArray("\x12\xF2\x00\x00\xDD", 5);
         QByteArray cmd_temp3 = QByteArray("\x12\xF3\x00\x00\xDD", 5);
         QByteArray cmd_temp4 = QByteArray("\x12\xF4\x00\x00\xDD", 5);
-        if(data == Order::cmd_measureFinish){//完成一次循环
-            logger->debug("接受到测量完成指令");
-            resetFPGA_afterMeasure();
-            return;
-        }
-        else if(data.left(2) ==cmd_temp1.left(2)) //采集温度数据
+        if(data.left(2) ==cmd_temp1.left(2)) //采集温度数据
         {
             double temp = ((data[2] & 0xFF) << 8 | (data[3] & 0xFF)) * 0.0078125; //单位℃
             logger->info(QString("温度1:%1").arg(temp));
@@ -404,7 +463,18 @@ void CommandHelper::handleData(QByteArray data)
                 QThread::msleep(jsonConfig_FPGA.PowerStableTime);
 
                 //开启硬件触发
-                cmdPool.push_back({"开启硬件触发", Order::cmd_HardTriggerOn});
+                switch (m_loopType) {
+                case LoopAB:
+                    cmdPool.push_back({"开启硬件触发[亮A、亮B、亮AB模式]", Order::cmd_TriggerAB_On});
+                    break;
+                case LoopA:
+                    cmdPool.push_back({"开启硬件触发[亮A模式]", Order::cmd_TriggerA_On});
+                    break;
+                case LoopB:
+                    cmdPool.push_back({"开启硬件触发[亮B模式]", Order::cmd_TriggerB_On});
+                    break;
+                }
+                
                 send(cmdPool.first().data);
                 logger->debug(QString("Send HEX: %1 (%2)")
                                   .arg(QString(cmdPool.first().data.toHex(' ')))

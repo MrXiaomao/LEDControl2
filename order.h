@@ -32,6 +32,10 @@ public:
     static const QByteArray cmd_closeDAC;
     //3、关闭硬件触发
     static const QByteArray cmd_closeHardTrigger;
+    //3+、关闭A触发
+    static const QByteArray cmd_closeTriggerA;
+    //3++、关闭B触发
+    static const QByteArray cmd_closeTriggerB;
     //4、关闭基线采集
     static const QByteArray cmd_closeBLSamlpe;
     //5、复位
@@ -71,10 +75,18 @@ public:
     static const QByteArray cmd_writeDAC;
     //20、开启电源
     static const QByteArray cmd_openPower;
-    //21、开启硬件触发
-    static const QByteArray cmd_HardTriggerOn;
-    //23、接收测量完成指令
-    static const QByteArray cmd_measureFinish;
+    //21-ABloop、开启AB硬件触发
+    static const QByteArray cmd_TriggerAB_On;
+    //21-Aloop、开启A硬件触发
+    static const QByteArray cmd_TriggerA_On;
+    //21-Bloop、开启B硬件触发
+    static const QByteArray cmd_TriggerB_On;
+    //23-AB、接收AB测量完成指令
+    static const QByteArray cmd_measureFinishAB;
+    //23-A、接收A测量完成指令
+    static const QByteArray cmd_measureFinishA;
+    //23-B、接收B测量完成指令
+    static const QByteArray cmd_measureFinishB;
     //28、开启采集基线
     static const QByteArray cmd_openBLSamlpe;
     //29、基线采集完成指令反馈

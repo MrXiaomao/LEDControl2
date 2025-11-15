@@ -46,7 +46,7 @@ public:
     void ressetFPGA();
 
     //进行循环前配置,是否自动采集基线
-    void setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeBLSample mode_BLsample);
+    void setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeBLSample mode_BLsample, ModeLoop mode_loop);
 
     //进行一次测量
     void startOneLoop(CsvDataRow data);
@@ -63,7 +63,7 @@ public:
     //网口原始数据解析线程
     void netFrameWorkThead();
 
-    const bool getSerialPortStatus(){return m_SerialPort.isOpen();}
+    bool getSerialPortStatus(){return m_SerialPort.isOpen();}
 
 
 protected:
@@ -116,6 +116,8 @@ private:
     WorkStatusFlag workStatus = NoWork;
     ModeBLSample m_modeBLSample; //是否自动采集基线
     CommonUtils::UserConfig jsonConfig_FPGA;
+    
+    ModeLoop m_loopType = LoopAB; //当前循环类型
     bool stopFlag = false; //用于循环测量中中断测量的标志位。
     bool mReceiveTriger = false; //标志位，用于确定是否接收到开启硬件触发指令
 };

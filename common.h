@@ -17,6 +17,12 @@ enum ModeBLSample {
     AutoBL        // 自动
 };
 
+enum ModeLoop {
+    LoopAB = 0, // 循环A，B，AB
+    LoopA,      // 单独循环A
+    LoopB,      // 单独循环B
+};
+
 // 声明常用函数（工具函数）
 namespace CommonUtils {
     extern QString jsonPath;

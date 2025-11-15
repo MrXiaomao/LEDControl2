@@ -9,7 +9,8 @@
         "checkValueA": 38847,
         "checkValueB": 13311,
         "loop_file": "C:/Users/DELL/Desktop/QT_Study/LEDControl2/build/x64/LEDControl/参考列表.csv",
-        "timesLED": 1030
+        "timesLED": 1030,
+        "LoopType":1
     },
     "User": {
         "HLpoint": 1,
