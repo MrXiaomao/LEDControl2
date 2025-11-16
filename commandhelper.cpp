@@ -252,13 +252,13 @@ void CommandHelper::stopMeasure()
         cmdPool.push_back({"关闭B触发", Order::cmd_closeTriggerB});//关闭B触发
         break;
     case LoopA:
-        cmdPool.push_back({"关闭B触发", Order::cmd_closeTriggerB});//关闭B触发
-        cmdPool.push_back({"关闭A触发", Order::cmd_closeTriggerA});//关闭A触发
+        cmdPool.push_back({"关闭A触发", Order::cmd_closeTriggerA});//关闭B触发
+        cmdPool.push_back({"关闭B触发", Order::cmd_closeTriggerB});//关闭A触发
         cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});//两次关闭硬件触发
         break;
     case LoopB:
-        cmdPool.push_back({"关闭A触发", Order::cmd_closeTriggerA});//关闭A触发
-        cmdPool.push_back({"关闭B触发", Order::cmd_closeTriggerB});//关闭B触发
+        cmdPool.push_back({"关闭B触发", Order::cmd_closeTriggerB});//关闭A触发
+        cmdPool.push_back({"关闭A触发", Order::cmd_closeTriggerA});//关闭B触发
         cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});//关闭硬件触发
         break;
     }
@@ -409,11 +409,13 @@ void CommandHelper::handleData(QByteArray data)
             QByteArray command = cmdPool.first().data;
             bool isCmdEqual = (data == command);
             if (!isCmdEqual){
-                logger->debug(tr("返回指令与发送指令不一致"));
-                send(cmdPool.first().data);
-                logger->debug(QString("Send HEX: %1 (%2)")
-                                  .arg(QString(cmdPool.first().data.toHex(' ')))
-                                  .arg(cmdPool.first().name));
+                if(data.size()>0)logger->debug(QString("error Recv HEX: %1").arg(QString(data.toHex(' '))));
+
+                logger->debug(tr("Looping返回指令与发送指令不一致"));
+                // send(cmdPool.first().data);
+                // logger->debug(QString("Send HEX: %1 (%2)")
+                //                   .arg(QString(cmdPool.first().data.toHex(' ')))
+                //                   .arg(cmdPool.first().name));
             }
         }
         return;
