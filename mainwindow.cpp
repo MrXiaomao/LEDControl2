@@ -13,7 +13,6 @@
 #include <QToolButton>
 #include <QMessageBox>
 #include <QDebug>
-#include "order.h"
 
 #include <log4qt/logger.h>
 #include <log4qt/patternlayout.h>
@@ -100,6 +99,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->checkA_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllAChanged);
     connect(ui->checkB_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllBChanged);
+
+    // 循环模式选择
+    connect(ui->radio_LoopAB, &QRadioButton::toggled, this, &MainWindow::onLoopTypeChanged);
+    connect(ui->radio_LoopA,  &QRadioButton::toggled, this, &MainWindow::onLoopTypeChanged);
+    connect(ui->radio_LoopB,  &QRadioButton::toggled, this, &MainWindow::onLoopTypeChanged);
 
     ConfigLog();
 
@@ -300,6 +304,23 @@ void MainWindow::loadUiConfigFromJson()
     int checkValueA = uiJson.value("checkValueA").toInt(0);
     int checkValueB = uiJson.value("checkValueB").toInt(0);
 
+    int loopTypeValue = uiJson.value("LoopType").toInt(0);
+    ModeLoop m_loopType = static_cast<ModeLoop>(loopTypeValue);
+    switch (m_loopType) {
+        case LoopAB:
+            ui->radio_LoopAB->setChecked(true);
+            break;
+        case LoopA:
+            ui->radio_LoopA->setChecked(true);
+            break;
+        case LoopB:
+            ui->radio_LoopB->setChecked(true);
+            break;
+        default:
+            ui->radio_LoopAB->setChecked(true);
+            break;
+    }
+
     // === 更新 A 组 ===
     for (int i = 0; i < m_checksA.size(); ++i) {
         int bitPos = m_bitMap[i];
@@ -354,6 +375,7 @@ void MainWindow::saveUiConfigToJson()
 {
     QJsonObject json = CommonUtils::ReadSetting();
     QJsonObject uiJson = json.value("UI").toObject();
+    QJsonObject userJson = json.value("User").toObject();
 
     uiJson["LEDWidth"]          = ui->spinBox_LEDWidth->value();
     uiJson["LightDelayTime"]    = ui->spinBox_lightDelayTime->value();
@@ -363,12 +385,15 @@ void MainWindow::saveUiConfigToJson()
     uiJson["IntensityRight"]    = ui->doubleSpinBox_loopEnd->value();
     uiJson["loop_file"]         = ui->lEdit_File->text();
     uiJson["BLSample_auto"]     = ui->radioButton_auto->isChecked();
+    userJson["timesTrigger"]    = ui->spinBox_timesLED->value(); //与发光次数保持一致
 
     // 同时保存勾选框状态
     uiJson["checkValueA"] = m_RegisterA;
     uiJson["checkValueB"] = m_RegisterB;
+    uiJson["LoopType"] = static_cast<int>(m_loopType);
 
     json["UI"] = uiJson;
+    json["User"] = userJson;
     CommonUtils::WriteSetting(json);
 
     logger->info("界面参数已保存到配置文件。");
@@ -571,6 +596,10 @@ void MainWindow::UIcontrolEnable(bool flag)
     ui->spinBox_TriggerDelayTime->setEnabled(flag);
     ui->spinBox_timesLED->setEnabled(flag);
 
+    ui->radio_LoopAB->setEnabled(flag);
+    ui->radio_LoopA->setEnabled(flag);
+    ui->radio_LoopB->setEnabled(flag);
+
     ui->checkA_all->setEnabled(flag);
     ui->checkB_all->setEnabled(flag);
 
@@ -661,6 +690,21 @@ void MainWindow::on_bt_startLoop_clicked()
     //开始循环
     if(ui->bt_startLoop->text() == "开始循环")
     {
+        //保存界面参数
+        saveUiConfigToJson();
+
+        switch (m_loopType) {
+        case LoopAB:
+            logger->info("设置循环模式：LoopAB");
+            break;
+        case LoopA:
+            logger->info("设置循环模式：LoopA");
+            break;
+        case LoopB:
+            logger->info("设置循环模式：LoopB");
+            break;
+        }
+
         //禁用界面控件
         UIcontrolEnable(false);
 
@@ -691,15 +735,17 @@ void MainWindow::on_bt_startLoop_clicked()
             return;
         }
         logger->info(QString("循环的光强区间：%1~%2").arg(intensityLeft).arg(intensityRight));
-        commManager->setConfigBeforeLoop(config, m_BLmode);
+        commManager->setConfigBeforeLoop(config, m_BLmode, m_loopType);
         ui->bt_kernelReset->setEnabled(false);
         ui->bt_startLoop->setText("停止循环");
     }
-    else{ //停止测量
-        commManager->stopMeasure();
-        UIcontrolEnable(true);
-        ui->bt_startLoop->setEnabled(false);
-        ui->bt_kernelReset->setEnabled(true);
+    else{ 
+        //停止测量
+        commManager->insertStopMeasure();
+        // commManager->stopMeasure();
+        // UIcontrolEnable(true);
+        // ui->bt_startLoop->setEnabled(false);
+        // ui->bt_kernelReset->setEnabled(true);
         ui->bt_startLoop->setText("开始循环");
     }
 }
@@ -916,6 +962,19 @@ void MainWindow::onCheckAllBChanged(int state)
     connect(ui->checkB_all, &QCheckBox::stateChanged, this, &MainWindow::onCheckAllBChanged);
 }
 
+void MainWindow::onLoopTypeChanged()
+{
+    if (ui->radio_LoopAB->isChecked()) {
+        m_loopType = LoopAB;
+    }
+    else if (ui->radio_LoopA->isChecked()) {
+        m_loopType = LoopA;
+    }
+    else if (ui->radio_LoopB->isChecked()) {
+        m_loopType = LoopB;
+    }
+}
+
 // 处理单选按钮选中状态变化（checked为true表示当前按钮被选中）
 void MainWindow::onBLmodeToggled(bool checked)
 {
@@ -958,6 +1017,8 @@ void MainWindow::on_bt_baseLineSample_clicked()
     commManager->baseLineSample_manual();
     
     logger->info("开始手动基线采集...");
+    UIcontrolEnable(false); //禁用控件
+    ui->bt_startLoop->setEnabled(false);
 }
 
 
@@ -977,6 +1038,9 @@ void MainWindow::onBaseLineSampleFinished()
     
     logger->info("手动基线采集完成");
     
+    UIcontrolEnable(true); //恢复控件
+    ui->bt_startLoop->setEnabled(true);
+
     // 可选：显示完成提示
     QMessageBox::information(this, "完成", "基线采集完成");
 }
@@ -1088,5 +1152,11 @@ void MainWindow::on_BaglosttestButton_clicked()
     } else {
         QMessageBox::critical(this, "错误", "文件解析失败！请检查文件路径和格式。");
     }
+}
+
+
+void MainWindow::on_pushButton_4_clicked()
+{
+    ui->textEdit_Log->clear();
 }
 

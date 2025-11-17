@@ -1,0 +1,33 @@
+{
+    "configurations": [
+        {
+            "name": "Win64",
+            "includePath": [
+                "${workspaceFolder}/**",
+
+                "C:/Qt/5.15.2/mingw81_64/include",
+                "C:/Qt/5.15.2/mingw81_64/include/QtCore",
+                "C:/Qt/5.15.2/mingw81_64/include/QtGui",
+                "C:/Qt/5.15.2/mingw81_64/include/QtWidgets",
+                "C:/Qt/5.15.2/mingw81_64/include/QtNetwork",
+                "C:/Qt/5.15.2/mingw81_64/include/QtMultimedia",
+                "C:/Qt/5.15.2/mingw81_64/include/QtQml",
+                "C:/Qt/5.15.2/mingw81_64/include/QtQuick",
+
+                // moc/ui 生成目录（构建后才有）
+                // "${workspaceFolder}/build/moc",
+                // "${workspaceFolder}/build/ui"
+            ],
+            "defines": [
+                "UNICODE",
+                "_UNICODE",
+                "WIN32"
+            ],
+            "compilerPath": "C:/Qt/Tools/mingw810_64/bin/g++.exe",
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "windows-gcc-x64"
+        }
+    ],
+    "version": 4
+}

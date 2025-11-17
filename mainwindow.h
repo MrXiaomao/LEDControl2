@@ -80,6 +80,10 @@ private slots:
     void onBaseLineSampleFinished();  // 新增：基线采集完成处理
 //=======================================
 
+    void on_pushButton_4_clicked();
+
+    void onLoopTypeChanged();
+
 private:
     LogParser parser;
     Ui::MainWindow *ui;
@@ -97,5 +101,6 @@ private:
     QList<QCheckBox*> m_checksA; // 存储勾选框指针，便于批量操作
     QList<QCheckBox*> m_checksB; // 存储勾选框指针，便于批量操作
     QList<int> m_bitMap; // 位号映射表：索引对应check1~check10，值为对应位号
+    ModeLoop m_loopType = LoopAB;
 };
 #endif // MAINWINDOW_H

@@ -68,7 +68,7 @@ CONFIG += embed_translations
 RC_ICONS = $$PWD/resource/logo.ico
 
 # 设置输出目录
-DESTDIR = $$PWD/build
+DESTDIR = $$PWD/../build_LED
 contains(QT_ARCH, x86_64) {
     # x64
     DESTDIR = $$DESTDIR/x64

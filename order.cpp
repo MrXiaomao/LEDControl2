@@ -21,6 +21,11 @@ const QByteArray Order::cmd_closePower("\x12\x06\x00\x00\xDD", 5);
 const QByteArray Order::cmd_closeDAC("\x12\x08\x00\x00\xDD", 5);
 //3、关闭硬件触发
 const QByteArray Order::cmd_closeHardTrigger("\x12\x0D\x00\x01\xDD", 5);
+//3+、关闭硬件触发
+const QByteArray Order::cmd_closeTriggerA("\x12\x2D\x00\x01\xDD", 5);
+//3++、关闭硬件触发
+const QByteArray Order::cmd_closeTriggerB("\x12\x3D\x00\x01\xDD", 5);
+
 //4、关闭基线采集
 const QByteArray Order::cmd_closeBLSamlpe("\x12\x1D\x00\x01\xDD", 5);
 //5、移位寄存器时钟和复位
@@ -60,10 +65,18 @@ QByteArray Order::cmd_voltConfig("\x12\x07\x00\x01\xDD", 5);
 const QByteArray Order::cmd_writeDAC("\x12\x08\x00\x01\xDD", 5);
 //20、开启电源
 const QByteArray Order::cmd_openPower("\x12\x06\x11\x00\xDD", 5);
-//21、开启硬件触发
-const QByteArray Order::cmd_HardTriggerOn("\x12\x0C\x00\x01\xDD", 5);
-//23、接收测量完成指令
-const QByteArray Order::cmd_measureFinish("\x12\xF5\x00\x00\xDD", 5);
+//21-AB、开启硬件触发
+const QByteArray Order::cmd_TriggerAB_On("\x12\x0C\x00\x01\xDD", 5);
+//21-A、开启硬件触发
+const QByteArray Order::cmd_TriggerA_On("\x12\x2C\x00\x01\xDD", 5);
+//21-B、开启硬件触发
+const QByteArray Order::cmd_TriggerB_On("\x12\x3C\x00\x01\xDD", 5);
+//23-AB、接收AB测量完成指令
+const QByteArray Order::cmd_measureFinishAB("\x12\xF5\x00\x00\xDD", 5);
+//23-A、接收A测量完成指令
+const QByteArray Order::cmd_measureFinishA("\x12\xF7\x00\x00\xDD", 5);
+//23-B、接收B测量完成指令
+const QByteArray Order::cmd_measureFinishB("\x12\xF8\x00\x00\xDD", 5);
 //28、开启采集基线
 const QByteArray Order::cmd_openBLSamlpe("\x12\x1C\x00\x01\xDD", 5);
 //29、基线采集完成指令反馈
