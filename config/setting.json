@@ -1,0 +1,24 @@
+{
+    "UI": {
+        "BLSample_auto": true,
+        "IntensityLeft": 10,
+        "IntensityRight": 200,
+        "LEDWidth": 20,
+        "LightDelayTime": 1020,
+        "LoopType": 1,
+        "TriggerDelayTime": 1020,
+        "checkValueA": 38847,
+        "checkValueB": 13311,
+        "loop_file": "C:/Users/DELL/Desktop/QT_Study/LEDControl2/build/x64/LEDControl/参考列表.csv",
+        "timesLED": 1030,
+        "LoopType":1
+    },
+    "User": {
+        "HLpoint": 1,
+        "PowerStableTime": 10,
+        "TempMonitorGap": 1,
+        "TriggerWidth": 1000,
+        "clockFrequency": 10,
+        "timesTrigger": 1030
+    }
+}
