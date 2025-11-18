@@ -5,6 +5,7 @@
         "IntensityRight": 200,
         "LEDWidth": 20,
         "LightDelayTime": 1020,
+        "LoopType": 1,
         "TriggerDelayTime": 1020,
         "checkValueA": 38847,
         "checkValueB": 13311,
@@ -18,6 +19,6 @@
         "TempMonitorGap": 1,
         "TriggerWidth": 1000,
         "clockFrequency": 10,
-        "timesTrigger":1000
+        "timesTrigger": 1030
     }
 }

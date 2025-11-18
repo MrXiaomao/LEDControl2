@@ -5,6 +5,7 @@
 #include <QDebug>
 
 QString CommonUtils::jsonPath = "./config/setting.json";
+//上传新内容
 
 // ============ 基础函数 =============
 QJsonObject CommonUtils::ReadSetting()
