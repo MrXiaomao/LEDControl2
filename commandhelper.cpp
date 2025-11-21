@@ -85,7 +85,7 @@ void CommandHelper::send(QByteArray cmd)
     }
     else
     {
-        QMessageBox::information(NULL,tr("information"),tr("please open serial port first"));
+        QMessageBox::information(NULL,tr("提示"),tr("请先打开串口"));
         logger->fatal(tr("串口未连接, 请先连接串口后再发送数据。"));
     }
 }
@@ -207,7 +207,21 @@ void CommandHelper::startOneLoop(CsvDataRow data)
                       .arg(QString(cmdPool.first().data.toHex(' ')))
                       .arg(cmdPool.first().name));
 }
+//手动模式进行一次测量
+void CommandHelper::startOneLoop(const QVector<int>& dacValuesFromUI)
+{
+    // 创建临时的CsvDataRow对象
+    CsvDataRow tempData;
+    tempData.ledIntensity = 0.0;  // 手动模式设为0
 
+    // 复制DAC值
+    for(int i = 0; i < 10 && i < dacValuesFromUI.size(); i++) {
+        tempData.dacValues[i] = dacValuesFromUI[i];
+    }
+
+    // 调用原有的函数
+    startOneLoop(tempData);
+}
 void CommandHelper::resetFPGA_afterMeasure()
 {
     cmdPool.clear();

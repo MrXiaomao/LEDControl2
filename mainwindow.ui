@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1157</width>
-    <height>600</height>
+    <height>638</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -451,13 +451,6 @@
              <property name="bottomMargin">
               <number>0</number>
              </property>
-             <item row="0" column="1">
-              <widget class="QCheckBox" name="checkA6">
-               <property name="text">
-                <string>x 4</string>
-               </property>
-              </widget>
-             </item>
              <item row="0" column="0">
               <widget class="QCheckBox" name="checkA5">
                <property name="text">
@@ -465,8 +458,8 @@
                </property>
               </widget>
              </item>
-             <item row="1" column="0">
-              <widget class="QCheckBox" name="checkB5">
+             <item row="0" column="1">
+              <widget class="QCheckBox" name="checkA6">
                <property name="text">
                 <string>x 4</string>
                </property>
@@ -474,6 +467,13 @@
              </item>
              <item row="1" column="1">
               <widget class="QCheckBox" name="checkB6">
+               <property name="text">
+                <string>x 4</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QCheckBox" name="checkB5">
                <property name="text">
                 <string>x 4</string>
                </property>
@@ -622,6 +622,138 @@
              </size>
             </property>
            </spacer>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="widget_11" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>50</height>
+          </size>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_8">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_14">
+            <property name="text">
+             <string>DAC设置</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_15">
+            <property name="text">
+             <string>A1</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label_16">
+            <property name="text">
+             <string>A2</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLabel" name="label_17">
+            <property name="text">
+             <string>A3</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4">
+           <widget class="QLabel" name="label_18">
+            <property name="text">
+             <string>A4</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="5">
+           <widget class="QLabel" name="label_19">
+            <property name="text">
+             <string>A5</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="6">
+           <widget class="QLabel" name="label_20">
+            <property name="text">
+             <string>B1</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="7">
+           <widget class="QLabel" name="label_21">
+            <property name="text">
+             <string>B2</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="8">
+           <widget class="QLabel" name="label_22">
+            <property name="text">
+             <string>B3</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="9">
+           <widget class="QLabel" name="label_23">
+            <property name="text">
+             <string>B4</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="10">
+           <widget class="QLabel" name="label_24">
+            <property name="text">
+             <string>B5</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QPushButton" name="pushButton">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>确认</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="spinBox_dac1"/>
+          </item>
+          <item row="1" column="2">
+           <widget class="QSpinBox" name="spinBox_dac2"/>
+          </item>
+          <item row="1" column="3">
+           <widget class="QSpinBox" name="spinBox_dac3"/>
+          </item>
+          <item row="1" column="4">
+           <widget class="QSpinBox" name="spinBox_dac4"/>
+          </item>
+          <item row="1" column="5">
+           <widget class="QSpinBox" name="spinBox_dac5"/>
+          </item>
+          <item row="1" column="6">
+           <widget class="QSpinBox" name="spinBox_dac6"/>
+          </item>
+          <item row="1" column="7">
+           <widget class="QSpinBox" name="spinBox_dac7"/>
+          </item>
+          <item row="1" column="8">
+           <widget class="QSpinBox" name="spinBox_dac8"/>
+          </item>
+          <item row="1" column="9">
+           <widget class="QSpinBox" name="spinBox_dac9"/>
+          </item>
+          <item row="1" column="10">
+           <widget class="QSpinBox" name="spinBox_dac10"/>
           </item>
          </layout>
         </widget>
@@ -778,7 +910,7 @@
      <x>0</x>
      <y>0</y>
      <width>1157</width>
-     <height>25</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">

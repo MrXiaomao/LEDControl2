@@ -26,6 +26,18 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    //
+    // 设置DAC spinbox的范围
+    ui->spinBox_dac1->setRange(0, 4095);  // 12位DAC的典型范围
+    ui->spinBox_dac2->setRange(0, 4095);
+    ui->spinBox_dac3->setRange(0, 4095);
+    ui->spinBox_dac4->setRange(0, 4095);
+    ui->spinBox_dac5->setRange(0, 4095);
+    ui->spinBox_dac6->setRange(0, 4095);
+    ui->spinBox_dac7->setRange(0, 4095);
+    ui->spinBox_dac8->setRange(0, 4095);
+    ui->spinBox_dac9->setRange(0, 4095);
+    ui->spinBox_dac10->setRange(0, 4095);
 
     // 步骤1：将check1~check10按顺序加入列表（索引0~9对应check1~check10）
     m_checksA << ui->checkA1
@@ -1158,5 +1170,32 @@ void MainWindow::on_BaglosttestButton_clicked()
 void MainWindow::on_pushButton_4_clicked()
 {
     ui->textEdit_Log->clear();
+}
+
+
+void MainWindow::on_pushButton_clicked()
+{
+    QVector<int> dacValues;
+
+    // 从10个spinbox获取整型值
+    dacValues << ui->spinBox_dac1->value()
+              << ui->spinBox_dac2->value()
+              << ui->spinBox_dac3->value()
+              << ui->spinBox_dac4->value()
+              << ui->spinBox_dac5->value()
+              << ui->spinBox_dac6->value()
+              << ui->spinBox_dac7->value()
+              << ui->spinBox_dac8->value()
+              << ui->spinBox_dac9->value()
+              << ui->spinBox_dac10->value();
+
+    // 重置进度条
+    ui->progressBar->setRange(0, 1);
+    ui->progressBar->setValue(0);
+
+    // 调用新的函数
+    commManager->startOneLoop(dacValues);
+
+    logger->info("手动模式启动循环");
 }
 

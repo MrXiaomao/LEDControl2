@@ -84,6 +84,8 @@ private slots:
 
     void onLoopTypeChanged();
 
+    void on_pushButton_clicked();
+
 private:
     LogParser parser;
     Ui::MainWindow *ui;

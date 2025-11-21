@@ -50,6 +50,8 @@ public:
 
     //进行一次测量
     void startOneLoop(CsvDataRow data);
+    //新增手动模式
+    void startOneLoop(const QVector<int>& dacValuesFromUI);
 
     //测量结束后恢复状态
     void resetFPGA_afterMeasure();
