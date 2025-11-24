@@ -131,6 +131,17 @@ public:
 
     //通过DAC配置电压
     static QByteArray getVoltConfig(unsigned char id, unsigned short volt);
+    //30、风扇控制指令：12 0F 00 0X DD，X=1开启，X=0关闭
+    static QByteArray getFanControl(bool enable) {
+        QByteArray cmd;
+        cmd.append(static_cast<char>(0x12));
+        cmd.append(static_cast<char>(0x0F));
+        cmd.append(static_cast<char>(0x00));
+        cmd.append(static_cast<char>(enable ? 0x01 : 0x00));  // 1开启, 0停止
+        cmd.append(static_cast<char>(0xDD));
+        return cmd;
+    }
+
 };
 
 #endif // ORDER_H

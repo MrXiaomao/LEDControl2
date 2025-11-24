@@ -314,7 +314,24 @@ void CommandHelper::startWork()
     // 创建数据解析线程
     NetDataThread = new QLiteThread(this);
 }
+//风扇控制函数的实现
+void CommandHelper::controlFan(bool enable)
+{
+    if(m_SerialPort.isOpen()) {
+        QByteArray fanCmd = Order::getFanControl(enable);
 
+        // === 修改：将风扇指令加入到cmdPool中 ===
+        cmdPool.clear();  // 清空之前的命令
+        cmdPool.push_back({enable ? "开启风扇" : "关闭风扇", fanCmd});
+        send(cmdPool.first().data);
+        logger->debug(QString("发送风扇控制指令: %1 (%2)")
+                          .arg(QString(fanCmd.toHex(' ')))
+                          .arg(enable ? "开启风扇" : "关闭风扇"));
+    } else {
+        QMessageBox::information(NULL, "提示", "请先打开串口");
+        logger->fatal("串口未连接, 无法控制风扇");
+    }
+}
 void CommandHelper::handleData(QByteArray data)
 {
     logger->debug(QString("Recv HEX: %1").arg(QString(data.toHex(' '))));

@@ -79,12 +79,16 @@ private slots:
 //=======================================
     void onBaseLineSampleFinished();  // 新增：基线采集完成处理
 //=======================================
+    void on_fanControlButton_clicked();//新增风扇控制
+//=======================================
 
     void on_pushButton_4_clicked();
 
     void onLoopTypeChanged();
 
     void on_pushButton_clicked();
+
+
 
 private:
     LogParser parser;
@@ -104,5 +108,6 @@ private:
     QList<QCheckBox*> m_checksB; // 存储勾选框指针，便于批量操作
     QList<int> m_bitMap; // 位号映射表：索引对应check1~check10，值为对应位号
     ModeLoop m_loopType = LoopAB;
+    bool m_fanStatus = false;  // 风扇状态：false=关闭, true=开启
 };
 #endif // MAINWINDOW_H

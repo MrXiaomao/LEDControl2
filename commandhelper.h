@@ -61,6 +61,8 @@ public:
 
     //串口开始工作
     void startWork();
+    // 风扇控制
+    void controlFan(bool enable);
 
     //网口原始数据解析线程
     void netFrameWorkThead();
