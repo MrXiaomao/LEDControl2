@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1157</width>
-    <height>600</height>
+    <height>638</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,6 +17,12 @@
    <layout class="QHBoxLayout" name="horizontalLayout_7">
     <item>
      <widget class="QWidget" name="widget_3" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
         <widget class="QPushButton" name="BaglosttestButton">
@@ -84,37 +90,33 @@
           </sizepolicy>
          </property>
          <layout class="QGridLayout" name="gridLayout_6">
-          <item row="3" column="0">
-           <widget class="QLabel" name="label_8">
-            <property name="text">
-             <string>发光次数：</string>
+          <item row="2" column="1">
+           <widget class="QSpinBox" name="spinBox_lightDelayTime">
+            <property name="minimum">
+             <number>1</number>
             </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            <property name="maximum">
+             <number>10000000</number>
+            </property>
+            <property name="singleStep">
+             <number>1</number>
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_5">
-            <property name="text">
-             <string>触发延迟时间/10ns：</string>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="spinBox_LEDWidth">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>655350</number>
+            </property>
+            <property name="singleStep">
+             <number>1</number>
             </property>
            </widget>
           </item>
           <item row="4" column="1">
-           <widget class="QLineEdit" name="lineEdit_Temp1">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="text">
-             <string>无</string>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
            <widget class="QSpinBox" name="spinBox_timesLED">
             <property name="minimum">
              <number>10</number>
@@ -130,48 +132,61 @@
             </property>
            </widget>
           </item>
-          <item row="6" column="1">
-           <widget class="QLineEdit" name="lineEdit_Temp3">
-            <property name="text">
-             <string>无</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_7">
-            <property name="text">
-             <string>发光宽度/10ns：</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="1">
-           <widget class="QLineEdit" name="lineEdit_Temp2">
-            <property name="text">
-             <string>无</string>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="1">
-           <widget class="QLineEdit" name="lineEdit_Temp4">
-            <property name="text">
-             <string>无</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QSpinBox" name="spinBox_LEDWidth">
-            <property name="minimum">
-             <number>1</number>
-            </property>
+          <item row="3" column="1">
+           <widget class="QSpinBox" name="spinBox_TriggerDelayTime">
             <property name="maximum">
-             <number>655350</number>
+             <number>10000000</number>
             </property>
             <property name="singleStep">
              <number>1</number>
             </property>
            </widget>
           </item>
-          <item row="4" column="0">
+          <item row="8" column="1">
+           <widget class="QLineEdit" name="lineEdit_Temp4">
+            <property name="text">
+             <string>无</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QLineEdit" name="lineEdit_Temp3">
+            <property name="text">
+             <string>无</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>发光宽度/10ns：</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QLineEdit" name="lineEdit_Temp2">
+            <property name="text">
+             <string>无</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QLineEdit" name="lineEdit_Temp1">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>无</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
            <widget class="QLabel" name="label_13">
             <property name="text">
              <string>温度：</string>
@@ -181,33 +196,44 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="1">
-           <widget class="QSpinBox" name="spinBox_lightDelayTime">
-            <property name="minimum">
-             <number>1</number>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>发光次数：</string>
             </property>
-            <property name="maximum">
-             <number>10000000</number>
-            </property>
-            <property name="singleStep">
-             <number>1</number>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>触发延迟时间/10ns：</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
            <widget class="QLabel" name="label_9">
             <property name="text">
              <string>发光延迟时间/10ns：</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QSpinBox" name="spinBox_TriggerDelayTime">
-            <property name="maximum">
-             <number>10000000</number>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_25">
+            <property name="text">
+             <string>风扇控制：</string>
             </property>
-            <property name="singleStep">
-             <number>1</number>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QPushButton" name="fanControlButton">
+            <property name="text">
+             <string>开启</string>
             </property>
            </widget>
           </item>
@@ -451,13 +477,6 @@
              <property name="bottomMargin">
               <number>0</number>
              </property>
-             <item row="0" column="1">
-              <widget class="QCheckBox" name="checkA6">
-               <property name="text">
-                <string>x 4</string>
-               </property>
-              </widget>
-             </item>
              <item row="0" column="0">
               <widget class="QCheckBox" name="checkA5">
                <property name="text">
@@ -465,8 +484,8 @@
                </property>
               </widget>
              </item>
-             <item row="1" column="0">
-              <widget class="QCheckBox" name="checkB5">
+             <item row="0" column="1">
+              <widget class="QCheckBox" name="checkA6">
                <property name="text">
                 <string>x 4</string>
                </property>
@@ -474,6 +493,13 @@
              </item>
              <item row="1" column="1">
               <widget class="QCheckBox" name="checkB6">
+               <property name="text">
+                <string>x 4</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QCheckBox" name="checkB5">
                <property name="text">
                 <string>x 4</string>
                </property>
@@ -627,6 +653,247 @@
         </widget>
        </item>
        <item>
+        <widget class="QWidget" name="widget_singleMeasure" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>50</height>
+          </size>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_8">
+          <property name="topMargin">
+           <number>2</number>
+          </property>
+          <property name="bottomMargin">
+           <number>2</number>
+          </property>
+          <item row="1" column="4">
+           <widget class="QSpinBox" name="spinBox_dac4">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>24</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="8">
+           <widget class="QSpinBox" name="spinBox_dac8">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>24</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="10">
+           <widget class="QSpinBox" name="spinBox_dac10">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>24</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="6">
+           <widget class="QSpinBox" name="spinBox_dac6">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>24</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="8">
+           <widget class="QLabel" name="label_22">
+            <property name="text">
+             <string>B3</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="9">
+           <widget class="QLabel" name="label_23">
+            <property name="text">
+             <string>B4</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QSpinBox" name="spinBox_dac2">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>24</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="9">
+           <widget class="QSpinBox" name="spinBox_dac9">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>24</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label_16">
+            <property name="text">
+             <string>A2</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="spinBox_dac1">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>24</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="5">
+           <widget class="QLabel" name="label_19">
+            <property name="text">
+             <string>A5</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_15">
+            <property name="text">
+             <string>A1</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="5">
+           <widget class="QSpinBox" name="spinBox_dac5">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>24</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLabel" name="label_17">
+            <property name="text">
+             <string>A3</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QSpinBox" name="spinBox_dac3">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>24</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_14">
+            <property name="text">
+             <string>光强</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="7">
+           <widget class="QLabel" name="label_21">
+            <property name="text">
+             <string>B2</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="7">
+           <widget class="QSpinBox" name="spinBox_dac7">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>24</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="10">
+           <widget class="QLabel" name="label_24">
+            <property name="text">
+             <string>B5</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="6">
+           <widget class="QLabel" name="label_20">
+            <property name="text">
+             <string>B1</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4">
+           <widget class="QLabel" name="label_18">
+            <property name="text">
+             <string>A4</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QPushButton" name="pushButton">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>26</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>单次测量</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QWidget" name="widget_6" native="true">
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
@@ -744,6 +1011,12 @@
        <item>
         <widget class="QWidget" name="widget_4" native="true">
          <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
           <item>
            <spacer name="horizontalSpacer">
             <property name="orientation">
@@ -778,7 +1051,7 @@
      <x>0</x>
      <y>0</y>
      <width>1157</width>
-     <height>25</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">

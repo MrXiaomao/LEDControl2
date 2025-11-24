@@ -85,7 +85,7 @@ void CommandHelper::send(QByteArray cmd)
     }
     else
     {
-        QMessageBox::information(NULL,tr("information"),tr("please open serial port first"));
+        QMessageBox::information(NULL,tr("提示"),tr("请先打开串口"));
         logger->fatal(tr("串口未连接, 请先连接串口后再发送数据。"));
     }
 }
@@ -207,7 +207,21 @@ void CommandHelper::startOneLoop(CsvDataRow data)
                       .arg(QString(cmdPool.first().data.toHex(' ')))
                       .arg(cmdPool.first().name));
 }
+//手动模式进行一次测量
+void CommandHelper::startOneLoop(const QVector<int>& dacValuesFromUI)
+{
+    // 创建临时的CsvDataRow对象
+    CsvDataRow tempData;
+    tempData.ledIntensity = 0.0;  // 手动模式设为0
 
+    // 复制DAC值
+    for(int i = 0; i < 10 && i < dacValuesFromUI.size(); i++) {
+        tempData.dacValues[i] = dacValuesFromUI[i];
+    }
+
+    // 调用原有的函数
+    startOneLoop(tempData);
+}
 void CommandHelper::resetFPGA_afterMeasure()
 {
     cmdPool.clear();
@@ -300,7 +314,24 @@ void CommandHelper::startWork()
     // 创建数据解析线程
     NetDataThread = new QLiteThread(this);
 }
+//风扇控制函数的实现
+void CommandHelper::controlFan(bool enable)
+{
+    if(m_SerialPort.isOpen()) {
+        QByteArray fanCmd = Order::getFanControl(enable);
 
+        // === 修改：将风扇指令加入到cmdPool中 ===
+        cmdPool.clear();  // 清空之前的命令
+        cmdPool.push_back({enable ? "开启风扇" : "关闭风扇", fanCmd});
+        send(cmdPool.first().data);
+        logger->debug(QString("发送风扇控制指令: %1 (%2)")
+                          .arg(QString(fanCmd.toHex(' ')))
+                          .arg(enable ? "开启风扇" : "关闭风扇"));
+    } else {
+        QMessageBox::information(NULL, "提示", "请先打开串口");
+        logger->fatal("串口未连接, 无法控制风扇");
+    }
+}
 void CommandHelper::handleData(QByteArray data)
 {
     logger->debug(QString("Recv HEX: %1").arg(QString(data.toHex(' '))));
