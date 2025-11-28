@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-10-26 10:14:52
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-11-28 22:19:25
+ * @LastEditTime: 2025-11-28 23:51:43
  * @Description: 请填写简介
  */
 #include "mainwindow.h"
@@ -20,6 +20,10 @@
 #include <log4qt/propertyconfigurator.h>
 #include <log4qt/logManager.h>
 #include "uilogappender.h"
+
+#include <QtConcurrent>
+#include <QFutureWatcher>
+#include <QTimer>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -99,6 +103,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(commManager, &CommandHelper::sigUpdateTemp, this, &MainWindow::slot_updateTemp, Qt::QueuedConnection);
     connect(commManager, &CommandHelper::sigFinishCurrentloop, this, &MainWindow::slot_finishedOneLoop, Qt::QueuedConnection);
     connect(commManager, &CommandHelper::sigBLSampleFinished, this, &MainWindow::onBaseLineSampleFinished, Qt::QueuedConnection);//手动基线采集
+    connect(commManager, &CommandHelper::sigError,  this, &MainWindow::onSerialError);
 
     // 2. （可选）关联选中状态变化的信号（两个单选按钮可共用一个槽函数）
     connect(ui->radioButton_auto, &QRadioButton::toggled,this, &MainWindow::onBLmodeToggled);
@@ -155,55 +160,56 @@ MainWindow::~MainWindow()
 //刷新串口
 void MainWindow::refreshSerialPort()
 {
-    //获取端口
-    std::vector<SerialPortInfo> portNameList = CSerialPortInfo::availablePortInfos();
-    if (portNameList.size() > 0)
-    {
-        QString message = "Avaiable Port is refreshed";
-        // QString currentTimestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz");
-        // QString consoleEntry = QString("[%1] %2: %3").arg(currentTimestamp, "info", message);
-
-        // //考虑到界面初始化调用此函数的时候，无法打印日志到界面
-        // ui->textEdit_Log->moveCursor (QTextCursor::End);
-        // ui->textEdit_Log->insertPlainText(consoleEntry);
-        logger->info(message);
+    QString currentPort;
+    if (commManager->getSerialPortStatus()) {
+        currentPort = ui->comboBoxPortName->currentData().toString();
+        if (currentPort.isEmpty())
+            currentPort = ui->comboBoxPortName->currentText().split(" ").first();
     }
-    else
-    {
-        // ui->textEdit_Log->moveCursor (QTextCursor::End);
-        // ui->textEdit_Log->insertPlainText("No avaiable Port");
-        logger->fatal("No avaiable Port");
+
+    std::vector<SerialPortInfo> portNameList;
+    for (int r = 0; r < 3; ++r) {
+        portNameList = CSerialPortInfo::availablePortInfos();
+        if (!portNameList.empty()) break;
+        QThread::msleep(200);
+        QApplication::processEvents();
+    }
+
+    ui->comboBoxPortName->clear();
+
+    if (portNameList.empty()) {
+        logger->warn("No available port after retry");
+        ui->pushButtonOpen->setText(tr("open"));
         return;
     }
 
-    //串口已打开
-    if(commManager->getSerialPortStatus()){
-        //记录当前端口
-        QString currentPortName = ui->comboBoxPortName->currentText();
-        ui->comboBoxPortName->clear();
-        ui->comboBoxPortName->insertItem(0, currentPortName);
-        int index = 0;
-        for (size_t i = 0; i < portNameList.size(); i++)
-        {
-            QString portName = QString::fromLocal8Bit(portNameList[i].portName);
-            if(currentPortName == portName){
-                continue;
-            }
-            ui->comboBoxPortName->insertItem(index++, portName);
-        }
+    int insertIndex = 0;
+    if (!currentPort.isEmpty()) {
+        ui->comboBoxPortName->insertItem(insertIndex++, currentPort, currentPort);
+    }
 
+    for (auto &p : portNameList) {
+        QString name = QString::fromLocal8Bit(p.portName);
+        if (name == currentPort) continue;
+
+        QString desc = QString::fromLocal8Bit(p.description);
+        QString showText = desc.isEmpty() ? name : QString("%1 : %2").arg(name, desc);
+
+        ui->comboBoxPortName->insertItem(insertIndex++, showText, name);
     }
-    else //串口本身未打开状态
-    {
-        ui->comboBoxPortName->clear();
-        for (size_t i = 0; i < portNameList.size(); i++)
-        {
-            QString portName = QString::fromLocal8Bit(portNameList[i].portName);
-            ui->comboBoxPortName->insertItem(i, portName);
-        }
-        //ui
-        ui->pushButtonOpen->setText(tr("open"));
-    }
+
+    ui->pushButtonOpen->setText(tr("open"));
+}
+
+
+void MainWindow::onSerialError(const QString& msg)
+{
+    // 确保在 UI 线程（Qt 自动帮你切回主线程）
+    QMessageBox::critical(this, tr("错误"), msg);
+
+    // 需要的话顺手回滚 UI 状态
+    ui->pushButtonOpen->setText(tr("open"));
+    UIcontrolEnable(true);
 }
 
 //配置日志输出相关信息
@@ -717,7 +723,6 @@ void MainWindow::UIcontrolEnable(bool flag)
     ui->radioButton_auto->setEnabled(flag);
 
     // 风扇按钮只受串口状态控制，不受测量状态影响 ===
-    // bool fanEnabled = commManager->getSerialPortStatus();
     ui->fanControlButton->setEnabled(flag);
 
     if(ui->radioButton_manual->isChecked()){
@@ -727,61 +732,110 @@ void MainWindow::UIcontrolEnable(bool flag)
 
 void MainWindow::on_pushButtonOpen_clicked()
 {
-    if(ui->pushButtonOpen->text() == tr("open"))
-    {
-        if(ui->comboBoxPortName->count() > 0)
-        {
-            QString portName = ui->comboBoxPortName->currentText();
-            bool flag = commManager->init(portName, 115200);
+    // ====== 当前是 close 状态：执行关闭 ======
+    if (ui->pushButtonOpen->text() != tr("open")) {
+        if (commManager) {
+            commManager->close();   // 你原来怎么关就怎么关
+        }
 
-            if(flag)
-            {
-                ui->pushButtonOpen->setText(tr("close"));
-                logger->info(QString("串口%1已打开").arg(portName));
-                commManager->ressetFPGA();
-                ui->bt_startLoop->setEnabled(true);
-                ui->singleMeasure->setEnabled(true); //单次测量按钮使能
-                //风扇控制按钮使能===
-                ui->fanControlButton->setEnabled(true);
-                ui->bt_kernelReset->setEnabled(true);
-                if(ui->radioButton_manual->isChecked())
-                {
-                    ui->bt_baseLineSample->setEnabled(true);
-                }
-            }
-            else
-            {
-                ui->pushButtonOpen->setText(tr("open"));
-                logger->error(QString("串口%1打开失败").arg(portName));
-                ui->bt_startLoop->setEnabled(false);
-                //单次测量按钮禁用===
-                ui->singleMeasure->setEnabled(false);
-                //风扇控制按钮禁用===
-                ui->fanControlButton->setEnabled(false);
-                ui->bt_kernelReset->setEnabled(false);
-                ui->bt_baseLineSample->setEnabled(false);
-            }
-        }
-        else
-        {
-            QMessageBox::information(NULL,tr("information"),tr("This Computer no avaiable port"));
-            qDebug()<< "This Computer no avaiable port";
-        }
-    }
-    else
-    {
-        QString portName = ui->comboBoxPortName->currentText();
-        commManager->close();
-        logger->info(QString("串口%1已关闭").arg(portName));
         ui->pushButtonOpen->setText(tr("open"));
-        ui->bt_startLoop->setEnabled(false);
-        //单次测量按钮禁用===
-        ui->singleMeasure->setEnabled(false);
-        //风扇控制按钮禁用===
-        ui->fanControlButton->setEnabled(false);
-        ui->bt_kernelReset->setEnabled(false);
-        ui->bt_baseLineSample->setEnabled(false);
+        UIcontrolEnable(true);
+        logger->info("串口已关闭");
+        return;
     }
+
+    // ====== 当前是 open 状态：准备打开 ======
+    QString portName = ui->comboBoxPortName->currentData().toString();
+    if (portName.isEmpty()) {
+        // 兼容：老数据或手动输入时 fallback
+        portName = ui->comboBoxPortName->currentText().split(" ").first();
+    }
+
+    const int baudRate = 115200;   // 你项目里固定的就保持不变
+
+    // ① 打开前再校验一次端口确实存在（避免枚举过期）
+    bool portOk = false;
+    auto portList = CSerialPortInfo::availablePortInfos();
+    for (auto &p : portList) {
+        if (QString::fromLocal8Bit(p.portName) == portName) {
+            portOk = true;
+            break;
+        }
+    }
+    if (!portOk) {
+        QMessageBox::warning(this, tr("串口不可用"),
+                             tr("串口不存在或已拔出，请刷新端口列表后重试"));
+        return;
+    }
+
+    // ② UI 先锁住，避免重复点击
+    UIcontrolEnable(false);
+    ui->pushButtonOpen->setEnabled(false);
+    ui->pushButtonOpen->setText(tr("opening..."));
+
+    // ③ 异步打开
+    auto rawWatcher = new QFutureWatcher<bool>(this);
+     QPointer<QFutureWatcher<bool>> watcher(rawWatcher); // 用 QPointer 包起来
+
+    QFuture<bool> future = QtConcurrent::run([=]() -> bool {
+        // 注意：这里在后台线程执行，绝不阻塞 UI
+        return commManager->init(portName, baudRate);
+    });
+    rawWatcher->setFuture(future);
+
+    // ④ 超时兜底（只做 UI 回滚，不强杀线程）
+    QTimer::singleShot(2000, this, [=]() {
+        if (!watcher) return; // watcher 已被删就直接退出
+        if (!watcher->isFinished()) {
+            logger->error(QString("打开串口超时：%1").arg(portName));
+
+            // UI 回滚
+            ui->pushButtonOpen->setEnabled(true);
+            ui->pushButtonOpen->setText(tr("open"));
+            UIcontrolEnable(true);
+
+            QMessageBox::warning(this, tr("打开超时"),
+                                 tr("串口打开超时，请确认端口选择是否正确或驱动是否正常"));
+        }
+    });
+
+    // ⑤ 后台完成后的最终处理
+    connect(watcher, &QFutureWatcher<bool>::finished, this, [=]() {
+        if (!watcher) return;
+        const bool ok = watcher->result();
+        watcher->deleteLater();
+
+        ui->pushButtonOpen->setEnabled(true);
+
+        if (ok) {
+            ui->pushButtonOpen->setText(tr("close"));
+            logger->info(QString("串口已打开：%1 @%2").arg(portName).arg(baudRate));
+            
+            commManager->ressetFPGA();
+			ui->bt_startLoop->setEnabled(true);
+			ui->singleMeasure->setEnabled(true); //单次测量按钮使能
+			//风扇控制按钮使能===
+			ui->fanControlButton->setEnabled(true);
+			ui->bt_kernelReset->setEnabled(true);
+			if(ui->radioButton_manual->isChecked())
+			{
+				ui->bt_baseLineSample->setEnabled(true);
+			}
+
+        } else {
+            ui->pushButtonOpen->setText(tr("open"));
+            UIcontrolEnable(true);
+            ui->bt_startLoop->setEnabled(false);
+			ui->singleMeasure->setEnabled(false);
+			ui->fanControlButton->setEnabled(false);
+			ui->bt_kernelReset->setEnabled(false);
+			ui->bt_baseLineSample->setEnabled(false);
+
+            logger->error(QString("串口打开失败：%1").arg(portName));
+            QMessageBox::information(this, tr("提示"),
+                                     tr("打开失败：%1").arg(commManager->lastErrorMsg()));
+        }
+    });
 }
 
 //循环测量
@@ -1283,7 +1337,7 @@ void MainWindow::on_fanControlButton_clicked()
     m_fanStatus = !m_fanStatus;
 
     // 发送风扇控制指令
-    commManager->controlFan(m_fanStatus);
+    commManager->controlFan(true);
 
     // 更新按钮文本
     if (m_fanStatus) {
@@ -1297,28 +1351,27 @@ void MainWindow::on_fanControlButton_clicked()
 
 void MainWindow::on_singleMeasure_clicked()
 {
-    CsvDataRow row;
-    row.ledIntensity = 0.0; // 单次测量时光强设为0
-    row.dacValues[0] = ui->spinBox_dac1->value();
-    row.dacValues[1] = ui->spinBox_dac2->value();   
-    row.dacValues[2] = ui->spinBox_dac3->value();
-    row.dacValues[3] = ui->spinBox_dac4->value();
-    row.dacValues[4] = ui->spinBox_dac5->value();
-    row.dacValues[5] = ui->spinBox_dac6->value();
-    row.dacValues[6] = ui->spinBox_dac7->value();
-    row.dacValues[7] = ui->spinBox_dac8->value();
-    row.dacValues[8] = ui->spinBox_dac9->value();
-    row.dacValues[9] = ui->spinBox_dac10->value();
-    
-    // dataLEDPara.clear();
-    dataLEDPara.append(row);
-
-    // 重置进度条
-    ui->progressBar->setRange(0, 1);
-    ui->progressBar->setValue(0);
-
     if(ui->singleMeasure->text() == "开始测量")
     {
+        CsvDataRow row;
+        row.ledIntensity = 0.0; // 单次测量时光强设为0
+        row.dacValues[0] = ui->spinBox_dac1->value();
+        row.dacValues[1] = ui->spinBox_dac2->value();   
+        row.dacValues[2] = ui->spinBox_dac3->value();
+        row.dacValues[3] = ui->spinBox_dac4->value();
+        row.dacValues[4] = ui->spinBox_dac5->value();
+        row.dacValues[5] = ui->spinBox_dac6->value();
+        row.dacValues[6] = ui->spinBox_dac7->value();
+        row.dacValues[7] = ui->spinBox_dac8->value();
+        row.dacValues[8] = ui->spinBox_dac9->value();
+        row.dacValues[9] = ui->spinBox_dac10->value();
+        
+        dataLEDPara.append(row);
+
+        // 重置进度条
+        ui->progressBar->setRange(0, 1);
+        ui->progressBar->setValue(0);
+
         logger->info("开始单次测量");
         logger->info(QString("DAC设置值：%1,%2,%3,%4,%5,%6,%7,%8,%9,%10")\
                         .arg(row.dacValues[0])\

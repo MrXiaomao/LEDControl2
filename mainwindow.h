@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-11-09 20:44:23
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-11-28 21:50:55
+ * @LastEditTime: 2025-11-28 23:10:29
  * @Description: 请填写简介
  */
 #ifndef MAINWINDOW_H
@@ -55,6 +55,7 @@ private slots:
     void OnUpdateReceive(QString str);
     void on_pushButtonOpen_clicked();
 
+    void onSerialError(const QString& msg); //处理串口相关错误信息
     void slot_RebackUnable(); //恢复界面按键使用，
     void slot_Reset_finished(); //FPGA配置好了，可以进行循环
     void slot_config_finished(); //循环前的参数配置已经完成

@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-10-26 17:03:54
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-11-28 20:34:43
+ * @LastEditTime: 2025-11-28 23:07:40
  * @Description: 请填写简介
  */
 #ifndef COMMANDHELPER_H
@@ -37,7 +37,10 @@ public:
     // 关闭串口
     void close();
 
-    void send(QByteArray cmd);
+    bool send(const QByteArray& cmd);
+
+    // 获取最近一次 init/open 的错误信息
+    QString lastErrorMsg() const { return m_lastErrorMsg; }
 
     //采集基线
     void baseLineSample_manual();
@@ -62,8 +65,9 @@ public:
 
     //网口原始数据解析线程
     void netFrameWorkThead();
-    // === 新增：风扇控制函数声明 ===
-    void controlFan(bool enable);
+    
+    // 风扇控制函数声明 
+    bool controlFan(bool enable);
 
     bool getSerialPortStatus(){return m_SerialPort.isOpen();}
 
@@ -93,7 +97,7 @@ private slots:
     void handleData(QByteArray data);
 
 signals:
-    void sigLog(const QString& message, const QString& type);
+    void sigError(const QString& message);
     void sigUpdateReceive(QString str);
     void sigUpdateData(QByteArray data);
 
@@ -107,6 +111,8 @@ signals:
     void sigUpdateTemp(int id, double temp); //监测到的温度。id：1~4。温度：摄氏度
 
 private:
+    // 缓存错误信息（线程安全需求不高，init只在打开时调用）
+    QString m_lastErrorMsg;
     Log4Qt::Logger *logger;   // 日志
     CSerialPort m_SerialPort;
     QVector<CommandItem> cmdPool;

@@ -1,5 +1,4 @@
 #include "commandhelper.h"
-#include <QMessageBox>
 #include <QDebug>
 #include <QByteArray>
 #include "order.h"
@@ -55,21 +54,24 @@ void CommandHelper::onReadEvent(const char *portName, unsigned int readBufferLen
 
 bool CommandHelper::init(const QString portName, int baudRate)
 {
+    m_lastErrorMsg.clear();
+
     // 转换为 UTF-8 编码的 const char*
     m_SerialPort.init(portName.toUtf8().constData(), baudRate);
-
     m_SerialPort.setReadIntervalTimeout(1);
 
-    if(m_SerialPort.open())
-    {
+    if (m_SerialPort.open()) {
+        logger->info(QString("open port ok: %1 @%2").arg(portName).arg(baudRate));
         return true;
     }
-    else
-    {
-        QMessageBox::information(NULL,tr("information"),tr("open port error") + QString("\n\ncode: %1\nmessage: %2").arg(m_SerialPort.getLastError()).arg(m_SerialPort.getLastErrorMsg()));
-        logger->fatal(QString("\n\ncode: %1\nmessage: %2").arg(m_SerialPort.getLastError()).arg(m_SerialPort.getLastErrorMsg()));
-        return false;
-    }
+
+    // 失败：不弹框，只记录错误
+    m_lastErrorMsg = QString("open port error; code: %1; message: %2")
+            .arg(m_SerialPort.getLastError())
+            .arg(m_SerialPort.getLastErrorMsg());
+
+    logger->fatal(m_lastErrorMsg);
+    return false;
 }
 
 void CommandHelper::close()
@@ -77,17 +79,30 @@ void CommandHelper::close()
     m_SerialPort.close();
 }
 
-void CommandHelper::send(QByteArray cmd)
+bool CommandHelper::send(const QByteArray& cmd)
 {
-    if(m_SerialPort.isOpen())
-    {
-        m_SerialPort.writeData(cmd.constData(), cmd.length());
+    m_lastErrorMsg.clear();
+
+    if (!m_SerialPort.isOpen()) {
+        m_lastErrorMsg = "serial port not open";
+        logger->warn(m_lastErrorMsg);
+        return false;
     }
-    else
-    {
-        QMessageBox::information(NULL,tr("提示"),tr("请先打开串口"));
-        logger->fatal(tr("串口未连接, 请先连接串口后再发送数据。"));
+
+    const int len = cmd.size();
+    int written = m_SerialPort.writeData(cmd.constData(), len);
+
+    if (written != len) {
+        m_lastErrorMsg = QString("write error; written %1/%2; code: %3; message: %4")
+                .arg(written)
+                .arg(len)
+                .arg(m_SerialPort.getLastError())
+                .arg(m_SerialPort.getLastErrorMsg());
+        logger->error(m_lastErrorMsg);
+        return false;
     }
+
+    return true;
 }
 
 void CommandHelper::ressetFPGA()
@@ -158,8 +173,10 @@ void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeB
                            Order::getTimesTrigger(jsonConfig_FPGA.timesTrigger)});
     }
     catch (const std::exception &e) {
-        QMessageBox::critical(NULL, "配置错误", e.what());
-        logger->fatal(QString("无法在\"%\"文件中找到\"User\"").arg(CommonUtils::jsonPath));
+        const QString msg = QString("配置错误：%1").arg(e.what());
+        m_lastErrorMsg = msg;
+        logger->fatal(msg);
+        emit sigError(msg);        // 让 MainWindow 去弹框
         emit sigRebackUnbale();
         return;
     }
@@ -303,23 +320,28 @@ void CommandHelper::startWork()
 }
 
 //风扇控制函数的实现
-void CommandHelper::controlFan(bool enable)
+bool CommandHelper::controlFan(bool enable)
 {
-    if(m_SerialPort.isOpen()) {
-        QByteArray fanCmd = Order::getFanControl(enable);
+    m_lastErrorMsg.clear();
 
-        // 将风扇指令加入到cmdPool中
-        cmdPool.clear();  // 清空之前的命令
-        cmdPool.push_back({enable ? "开启风扇" : "关闭风扇", fanCmd});
+    if(!m_SerialPort.isOpen()) {
+        const QString msg = "serial port not open, cannot control fan";
+        m_lastErrorMsg = msg;
+        logger->warn(m_lastErrorMsg);
 
-        send(cmdPool.first().data);
-        logger->debug(QString("发送风扇控制指令: %1 (%2)")
-                          .arg(QString(fanCmd.toHex(' ')))
-                          .arg(enable ? "开启风扇" : "关闭风扇"));
-    } else {
-        QMessageBox::information(NULL, "提示", "请先打开串口");
-        logger->fatal("串口未连接, 无法控制风扇");
+        emit sigError(msg);   // 通知 UI
+        return false;
     }
+
+    QByteArray fanCmd = Order::getFanControl(enable);
+    cmdPool.clear();
+    cmdPool.push_back({enable ? "开启风扇" : "关闭风扇", fanCmd});
+
+    send(cmdPool.first().data);
+    logger->debug(QString("Send HEX: %1 (%2)")
+                      .arg(QString(cmdPool.first().data.toHex(' ')))
+                      .arg(cmdPool.first().name));
+    return true;
 }
 
 void CommandHelper::handleData(QByteArray data)
