@@ -1,24 +1,33 @@
 {
     "UI": {
         "BLSample_auto": true,
+        "DAC_A1": 10,
+        "DAC_A2": 10,
+        "DAC_A3": 100,
+        "DAC_A4": 100,
+        "DAC_A5": 100,
+        "DAC_B1": 10,
+        "DAC_B2": 10,
+        "DAC_B3": 10,
+        "DAC_B4": 10,
+        "DAC_B5": 10,
         "IntensityLeft": 10,
-        "IntensityRight": 200,
-        "LEDWidth": 20,
-        "LightDelayTime": 1020,
-        "LoopType": 2,
-        "TriggerDelayTime": 1020,
-        "checkValueA": 38847,
-        "checkValueB": 13311,
-        "loop_file": "D:/LEDControl2/参考列表.csv",
-        "timesLED": 1030
+        "IntensityRight": 12,
+        "LEDWidth(*10ns)": 1,
+        "LightDelayTime(*10ns)": 100,
+        "LoopType": 0,
+        "TriggerDelayTime(*10ns)": 100,
+        "checkValueA": 57216,
+        "checkValueB": 46528,
+        "loop_file": "C:/Users/DELL/Desktop/QT_Study/build_LED/x64/qt5.15.2/参考列表.csv",
+        "timesLED": 1000
     },
     "User": {
         "HLpoint": 1,
-        "PowerStableTime": 10,
-        "TempMonitorGap": 1,
-        "TriggerWidth": 1000,
+        "PowerStableTime(ms)": 1000,
+        "TempMonitorGap(s)": 1,
+        "TriggerWidth(*10ns)": 10,
         "clockFrequency": 10,
-        "timesTrigger": 1030
-    },
-    "loop_file": "D:/LEDControl2/参考列表.csv"
+        "timesTrigger": 1000
+    }
 }

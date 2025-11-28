@@ -9,6 +9,7 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    aboutwidget.cpp \
     commandhelper.cpp \
     common.cpp \
     logparser.cpp \
@@ -18,6 +19,7 @@ SOURCES += \
     qlitethread.cpp
 
 HEADERS += \
+    aboutwidget.h \
     commandhelper.h \
     common.h \
     logparser.h \
@@ -30,6 +32,25 @@ HEADERS += \
 # 1. headers
 INCLUDEPATH += "$$PWD/CSerialPort/include"
 include($$PWD/log4qt/Include/log4qt.pri)
+
+#############################################################################################################
+exists (./.git) {
+    GIT_BRANCH   = $$system(git rev-parse --abbrev-ref HEAD)
+    GIT_TIME     = $$system(git show --oneline --format=\"%ci%H\" -s HEAD)
+    APP_VERSION = "Git: $${GIT_BRANCH}: $${GIT_TIME}"
+} else {
+    GIT_BRANCH      = None
+    GIT_TIME        = None
+    APP_VERSION     = None
+}
+
+DEFINES += GIT_BRANCH=\"\\\"$$GIT_BRANCH\\\"\"
+DEFINES += GIT_TIME=\"\\\"$$GIT_TIME\\\"\"
+DEFINES += APP_VERSION=\"\\\"$$APP_VERSION\\\"\"
+
+message(GIT_BRANCH":  ""$$GIT_BRANCH")
+message(GIT_TIME":  ""$$GIT_TIME")
+message(APP_VERSION":  ""$$APP_VERSION")
 
 # 2. sources
 SOURCES += $$PWD/CSerialPort/src/SerialPortBase.cpp
@@ -57,6 +78,7 @@ DEFINES += _UNICODE
 # end by itas109
 
 FORMS += \
+    aboutwidget.ui \
     mainwindow.ui
 
 TRANSLATIONS += \

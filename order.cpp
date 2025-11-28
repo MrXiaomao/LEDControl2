@@ -210,3 +210,14 @@ QByteArray Order::getVoltConfig(unsigned char id, unsigned short volt)
 
     return tempcmd;
 }
+QByteArray Order::getFanControl(bool enable)
+{
+    QByteArray cmd;
+    cmd.resize(5);
+    cmd[0] = 0x12;
+    cmd[1] = 0x0F;
+    cmd[2] = 0x00;
+    cmd[3] = enable ? 0x01 : 0x00;
+    cmd[4] = 0xDD;
+    return cmd;
+}

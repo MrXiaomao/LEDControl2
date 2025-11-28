@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-10-26 10:14:52
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-11-09 21:37:06
+ * @LastEditTime: 2025-11-28 22:19:25
  * @Description: 请填写简介
  */
 #include "mainwindow.h"
@@ -26,21 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    //
-    ui->fanControlButton->setText("开启风扇");//风扇初始值
-    ui->fanControlButton->setEnabled(false);  // 初始禁用
-    m_fanStatus = false;  // 确保初始状态为关闭
-    // 设置DAC spinbox的范围
-    ui->spinBox_dac1->setRange(0, 4095);  // 12位DAC的典型范围
-    ui->spinBox_dac2->setRange(0, 4095);
-    ui->spinBox_dac3->setRange(0, 4095);
-    ui->spinBox_dac4->setRange(0, 4095);
-    ui->spinBox_dac5->setRange(0, 4095);
-    ui->spinBox_dac6->setRange(0, 4095);
-    ui->spinBox_dac7->setRange(0, 4095);
-    ui->spinBox_dac8->setRange(0, 4095);
-    ui->spinBox_dac9->setRange(0, 4095);
-    ui->spinBox_dac10->setRange(0, 4095);
+
 
     // 步骤1：将check1~check10按顺序加入列表（索引0~9对应check1~check10）
     m_checksA << ui->checkA1
@@ -97,6 +83,12 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     ui->bt_startLoop->setEnabled(false);
+    ui->bt_kernelReset->setEnabled(false);
+    ui->bt_baseLineSample->setEnabled(false);
+    //单次测量按钮初始禁用===
+    ui->singleMeasure->setEnabled(false);
+    //风扇控制按钮初始禁用===
+    ui->fanControlButton->setEnabled(false);
 
     // 连接日志信号槽
     // connect(commManager, &CommandHelper::sigUpdateReceive, this, &MainWindow::OnUpdateReceive, Qt::QueuedConnection);
@@ -132,11 +124,12 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
 
-    // 程序退出时确保风扇关闭
+    // 程序退出时确保风扇关闭（这里指的是关闭QT程序，不会发出或处理指令）
     if (m_fanStatus && commManager->getSerialPortStatus()) {
         commManager->controlFan(false);
         logger->info("程序退出，自动关闭风扇");
-    }//退出时关闭串口
+    }
+    //退出时关闭串口
     commManager->close();
 
     //将界面参数保存到json文件中
@@ -311,9 +304,9 @@ void MainWindow::loadUiConfigFromJson()
     }
 
     // === 整数控件 ===
-    ui->spinBox_LEDWidth->setValue(uiJson.value("LEDWidth").toInt(1));
-    ui->spinBox_lightDelayTime->setValue(uiJson.value("LightDelayTime").toInt(100));
-    ui->spinBox_TriggerDelayTime->setValue(uiJson.value("TriggerDelayTime").toInt(100));
+    ui->spinBox_LEDWidth->setValue(uiJson.value("LEDWidth(*10ns)").toInt(1));
+    ui->spinBox_lightDelayTime->setValue(uiJson.value("LightDelayTime(*10ns)").toInt(100));
+    ui->spinBox_TriggerDelayTime->setValue(uiJson.value("TriggerDelayTime(*10ns)").toInt(100));
     ui->spinBox_timesLED->setValue(uiJson.value("timesLED").toInt(1000));
 
     // === 浮点控件 ===
@@ -380,6 +373,18 @@ void MainWindow::loadUiConfigFromJson()
     m_BLmode = modeBL?AutoBL:ManualBL;
     ui->radioButton_auto->setChecked(m_BLmode==AutoBL);
 
+    //DAC参数
+    ui->spinBox_dac1->setValue(uiJson.value("DAC_A1").toInt(10));
+    ui->spinBox_dac2->setValue(uiJson.value("DAC_A2").toInt(10));
+    ui->spinBox_dac3->setValue(uiJson.value("DAC_A3").toInt(10));
+    ui->spinBox_dac4->setValue(uiJson.value("DAC_A4").toInt(10));
+    ui->spinBox_dac5->setValue(uiJson.value("DAC_A5").toInt(10));
+    ui->spinBox_dac6->setValue(uiJson.value("DAC_B1").toInt(10));
+    ui->spinBox_dac7->setValue(uiJson.value("DAC_B2").toInt(10));
+    ui->spinBox_dac8->setValue(uiJson.value("DAC_B3").toInt(10));
+    ui->spinBox_dac9->setValue(uiJson.value("DAC_B4").toInt(10));
+    ui->spinBox_dac10->setValue(uiJson.value("DAC_B5").toInt(10));
+
     // === 文件选择 ===
     QString fileName = uiJson.value("loop_file").toString("");
     ui->lEdit_File->setText(fileName);
@@ -397,9 +402,9 @@ void MainWindow::saveUiConfigToJson()
     QJsonObject uiJson = json.value("UI").toObject();
     QJsonObject userJson = json.value("User").toObject();
 
-    uiJson["LEDWidth"]          = ui->spinBox_LEDWidth->value();
-    uiJson["LightDelayTime"]    = ui->spinBox_lightDelayTime->value();
-    uiJson["TriggerDelayTime"]  = ui->spinBox_TriggerDelayTime->value();
+    uiJson["LEDWidth(*10ns)"]          = ui->spinBox_LEDWidth->value();
+    uiJson["LightDelayTime(*10ns)"]    = ui->spinBox_lightDelayTime->value();
+    uiJson["TriggerDelayTime(*10ns)"]  = ui->spinBox_TriggerDelayTime->value();
     uiJson["timesLED"]          = ui->spinBox_timesLED->value();
     uiJson["IntensityLeft"]     = ui->doubleSpinBox_loopStart->value();
     uiJson["IntensityRight"]    = ui->doubleSpinBox_loopEnd->value();
@@ -410,13 +415,35 @@ void MainWindow::saveUiConfigToJson()
     // 同时保存勾选框状态
     uiJson["checkValueA"] = m_RegisterA;
     uiJson["checkValueB"] = m_RegisterB;
-    uiJson["LoopType"] = static_cast<int>(m_loopType);
+    uiJson["LoopType"]    = static_cast<int>(m_loopType);
+
+    //DAC参数
+    uiJson["DAC_A1"]    = ui->spinBox_dac1->value();
+    uiJson["DAC_A2"]    = ui->spinBox_dac2->value();
+    uiJson["DAC_A3"]    = ui->spinBox_dac3->value();
+    uiJson["DAC_A4"]    = ui->spinBox_dac4->value();
+    uiJson["DAC_A5"]    = ui->spinBox_dac5->value();
+    uiJson["DAC_B1"]    = ui->spinBox_dac6->value();
+    uiJson["DAC_B2"]    = ui->spinBox_dac7->value();
+    uiJson["DAC_B3"]    = ui->spinBox_dac8->value();
+    uiJson["DAC_B4"]    = ui->spinBox_dac9->value();
+    uiJson["DAC_B5"]    = ui->spinBox_dac10->value();
 
     json["UI"] = uiJson;
     json["User"] = userJson;
     CommonUtils::WriteSetting(json);
 
-    logger->info("界面参数已保存到配置文件。");
+    logger->debug("界面参数已保存到配置文件。");
+}
+
+#include "aboutwidget.h"
+void MainWindow::on_action_about_triggered()
+{
+    AboutWidget *w = new AboutWidget(this);
+    w->setAttribute(Qt::WA_DeleteOnClose, true);
+    w->setWindowFlags(Qt::WindowCloseButtonHint|Qt::Dialog);
+    w->setWindowModality(Qt::ApplicationModal);
+    w->showNormal();
 }
 
 void MainWindow::OnUpdateReceive(QString str)
@@ -448,8 +475,10 @@ void MainWindow::btnSelectFile_clicked()
 
             // 保存到配置文件
             QJsonObject jsonSetting = CommonUtils::ReadSetting();
-            jsonSetting["loop_file"] = m_loopFile;
-            CommonUtils::WriteSetting(jsonSetting);
+            QJsonObject uiJson = jsonSetting.value("UI").toObject();
+
+            uiJson["loop_file"] = m_loopFile;  // 写入 UI 组
+            jsonSetting["UI"] = uiJson;
 
             readCsvFile(fileName);
             logger->info("文件验证成功");
@@ -526,10 +555,12 @@ void MainWindow::readCsvFile(const QString &filePath)
 void MainWindow::slot_RebackUnable()
 {
     ui->bt_startLoop->setEnabled(true);
-    ui->bt_startLoop->setText("开始测量");
+    ui->singleMeasure->setEnabled(true);
     UIcontrolEnable(true);
+
+    ui->bt_startLoop->setText("开始测量");
     // 异常恢复时重新启用手动DAC测量按钮 ===
-    ui->pushButton->setEnabled(true);
+    ui->singleMeasure->setEnabled(true);
     // 异常恢复时重新启用风扇按钮 ===
     if (commManager->getSerialPortStatus()) {
         ui->fanControlButton->setEnabled(true);
@@ -538,18 +569,29 @@ void MainWindow::slot_RebackUnable()
 
 void MainWindow::slot_Reset_finished()
 {
-    logger->info("内核初始化完成");
+    if(m_currentMeasureType == NoMeasure)
+    {
+        logger->info("内核重置完成");
+    }
+    
+    m_currentMeasureType = NoMeasure;
+
     ui->bt_startLoop->setEnabled(true);
+    // 内核重置完成后重新启用手动DAC测量按钮 ===
+    ui->singleMeasure->setEnabled(true);
     UIcontrolEnable(true);
 }
 
 void MainWindow::slot_config_finished() //循环前的参数配置已经完成
 {
-    logger->info("参数配置完成");
+    logger->debug("参数配置完成");
 
     //开始真正的循环
     CsvDataRow data = tempLEDdata.first();
-    logger->info(QString("开始循环,光强:%1").arg(data.ledIntensity));
+    if(m_currentMeasureType == LoopMeasure){
+        logger->info(QString("开始循环,光强:%1").arg(data.ledIntensity));
+    }
+
     ui->progressBar->setRange(0,tempLEDdata.size());
     ui->progressBar->setValue(0);
     commManager->startOneLoop(data);
@@ -559,10 +601,11 @@ void MainWindow::slot_config_finished() //循环前的参数配置已经完成
 void MainWindow::slot_measureStoped()
 {
     logger->info("测量已停止");
-    ui->bt_startLoop->setEnabled(true);
     UIcontrolEnable(true);
     //测量停止时重新启用手动DAC测量按钮 ===
-    ui->pushButton->setEnabled(true);
+    ui->singleMeasure->setEnabled(true);
+    ui->bt_startLoop->setEnabled(true);
+
     // 测量停止时重新启用风扇按钮 ===
     if (commManager->getSerialPortStatus()) {
         ui->fanControlButton->setEnabled(true);
@@ -610,16 +653,20 @@ void MainWindow::slot_finishedOneLoop()
     }
     else{
         commManager->ressetFPGA();
-        logger->info("完成所有循环");
-        ui->bt_startLoop->setText("开始循环");
-        // 测量完成时重新启用手动DAC测量按钮 ===
-        ui->pushButton->setEnabled(true);
-        // 循环完成时重新启用风扇按钮 ===
-        if (commManager->getSerialPortStatus()) {
-            ui->fanControlButton->setEnabled(true);
+        if(m_currentMeasureType == LoopMeasure){   
+            logger->info("完成所有循环");
+            ui->bt_startLoop->setText("开始循环");
         }
-        // UIcontrolEnable(true);
-        // ui->bt_startLoop->setEnabled(true);
+        else
+        {
+            logger->info("单次测量完成");
+            ui->singleMeasure->setText("开始测量");
+        }
+
+        // 测量完成时重新启用手动DAC测量按钮 ===
+        ui->singleMeasure->setEnabled(true);
+        ui->bt_startLoop->setEnabled(true);
+        UIcontrolEnable(true);
     }
 }
 
@@ -668,11 +715,10 @@ void MainWindow::UIcontrolEnable(bool flag)
 
     ui->radioButton_manual->setEnabled(flag);
     ui->radioButton_auto->setEnabled(flag);
-    //手动DAC测量按钮控制 ===
-    ui->pushButton->setEnabled(flag);
+
     // 风扇按钮只受串口状态控制，不受测量状态影响 ===
-    bool fanEnabled = commManager->getSerialPortStatus();
-    ui->fanControlButton->setEnabled(fanEnabled);
+    // bool fanEnabled = commManager->getSerialPortStatus();
+    ui->fanControlButton->setEnabled(flag);
 
     if(ui->radioButton_manual->isChecked()){
         ui->bt_baseLineSample->setEnabled(flag);
@@ -693,21 +739,11 @@ void MainWindow::on_pushButtonOpen_clicked()
                 ui->pushButtonOpen->setText(tr("close"));
                 logger->info(QString("串口%1已打开").arg(portName));
                 commManager->ressetFPGA();
-
-                // 启用相关按钮
                 ui->bt_startLoop->setEnabled(true);
+                ui->singleMeasure->setEnabled(true); //单次测量按钮使能
+                //风扇控制按钮使能===
+                ui->fanControlButton->setEnabled(true);
                 ui->bt_kernelReset->setEnabled(true);
-                ui->fanControlButton->setEnabled(true);  // 启用风扇按钮
-
-                // 确保风扇初始状态为关闭
-                if (m_fanStatus) {
-                    // 如果之前是开启状态，发送关闭指令
-                    commManager->controlFan(false);
-                    m_fanStatus = false;
-                    ui->fanControlButton->setText("开启风扇");
-                    logger->info("串口重新打开，风扇状态已重置为关闭");
-                }
-
                 if(ui->radioButton_manual->isChecked())
                 {
                     ui->bt_baseLineSample->setEnabled(true);
@@ -715,13 +751,15 @@ void MainWindow::on_pushButtonOpen_clicked()
             }
             else
             {
-                // 打开失败，保持禁用状态
                 ui->pushButtonOpen->setText(tr("open"));
                 logger->error(QString("串口%1打开失败").arg(portName));
                 ui->bt_startLoop->setEnabled(false);
+                //单次测量按钮禁用===
+                ui->singleMeasure->setEnabled(false);
+                //风扇控制按钮禁用===
+                ui->fanControlButton->setEnabled(false);
                 ui->bt_kernelReset->setEnabled(false);
                 ui->bt_baseLineSample->setEnabled(false);
-                ui->fanControlButton->setEnabled(false);
             }
         }
         else
@@ -732,22 +770,17 @@ void MainWindow::on_pushButtonOpen_clicked()
     }
     else
     {
-        // 关闭串口
         QString portName = ui->comboBoxPortName->currentText();
         commManager->close();
         logger->info(QString("串口%1已关闭").arg(portName));
         ui->pushButtonOpen->setText(tr("open"));
-
-        // 禁用所有功能按钮
         ui->bt_startLoop->setEnabled(false);
+        //单次测量按钮禁用===
+        ui->singleMeasure->setEnabled(false);
+        //风扇控制按钮禁用===
+        ui->fanControlButton->setEnabled(false);
         ui->bt_kernelReset->setEnabled(false);
         ui->bt_baseLineSample->setEnabled(false);
-        ui->fanControlButton->setEnabled(false);  // 禁用风扇按钮
-
-        // 重置风扇状态为关闭
-        m_fanStatus = false;
-        ui->fanControlButton->setText("开启风扇");
-        logger->info("串口关闭，风扇状态已重置为关闭");
     }
 }
 
@@ -762,20 +795,18 @@ void MainWindow::on_bt_startLoop_clicked()
 
         switch (m_loopType) {
         case LoopAB:
-            logger->info("设置循环模式：LoopAB");
+            logger->info("设置循环模式：A-B-AB循环");
             break;
         case LoopA:
-            logger->info("设置循环模式：LoopA");
+            logger->info("设置循环模式：A循环");
             break;
         case LoopB:
-            logger->info("设置循环模式：LoopB");
+            logger->info("设置循环模式：B循环");
             break;
         }
 
         //禁用界面控件
         UIcontrolEnable(false);
-        // 循环开始时禁用风扇按钮 ===
-        ui->fanControlButton->setEnabled(false);
 
         //获取界面FPGA相关控制参数
         CommonUtils::UI_FPGAconfig config;
@@ -801,23 +832,22 @@ void MainWindow::on_bt_startLoop_clicked()
         {
             logger->fatal("设置的光强区间错误，请核对后重新开始循环");
             UIcontrolEnable(true);
-            //循环启动失败时重新启用风扇按钮 ===
-            if (commManager->getSerialPortStatus()) {
-                ui->fanControlButton->setEnabled(true);
-            }
             return;
         }
+
+        m_currentMeasureType = LoopMeasure;
         logger->info(QString("循环的光强区间：%1~%2").arg(intensityLeft).arg(intensityRight));
         commManager->setConfigBeforeLoop(config, m_BLmode, m_loopType);
         ui->bt_kernelReset->setEnabled(false);
         ui->bt_startLoop->setText("停止循环");
     }
     else{ 
+        logger->info("点击停止循环测量");
         //停止测量
         commManager->insertStopMeasure();
         // commManager->stopMeasure();
         // UIcontrolEnable(true);
-        // ui->bt_startLoop->setEnabled(false);
+        ui->bt_startLoop->setEnabled(false);
         // ui->bt_kernelReset->setEnabled(true);
         ui->bt_startLoop->setText("开始循环");
     }
@@ -1071,6 +1101,7 @@ void MainWindow::on_bt_kernelReset_clicked()
     commManager->ressetFPGA();
     UIcontrolEnable(false); //禁用控件
     ui->bt_startLoop->setEnabled(false);
+    ui->singleMeasure->setEnabled(false); //单次测量按钮禁用===
 }
 
 
@@ -1087,7 +1118,7 @@ void MainWindow::on_bt_baseLineSample_clicked()
     QApplication::processEvents();
 
     // === 新增：基线采集时禁用手动DAC测量按钮 ===
-    ui->pushButton->setEnabled(false);
+    ui->singleMeasure->setEnabled(false);
     
     // 开始基线采集
     commManager->baseLineSample_manual();
@@ -1095,6 +1126,9 @@ void MainWindow::on_bt_baseLineSample_clicked()
     logger->info("开始手动基线采集...");
     UIcontrolEnable(false); //禁用控件
     ui->bt_startLoop->setEnabled(false);
+    ui->bt_kernelReset->setEnabled(false);
+    ui->fanControlButton->setEnabled(false); //基线采集时禁用风扇按钮===
+    ui->singleMeasure->setEnabled(false); //单次测量按钮禁用===
 }
 
 
@@ -1102,7 +1136,7 @@ void MainWindow::on_bt_refreshPort_clicked()
 {
     refreshSerialPort();
 }
-//======================================================
+
 void MainWindow::onBaseLineSampleFinished()
 {
     // 恢复按钮状态
@@ -1117,12 +1151,12 @@ void MainWindow::onBaseLineSampleFinished()
     UIcontrolEnable(true); //恢复控件
     ui->bt_startLoop->setEnabled(true);
     // === 新增：基线采集完成时重新启用手动DAC测量按钮 ===
-    ui->pushButton->setEnabled(true);
+    ui->singleMeasure->setEnabled(true);
 
     // 可选：显示完成提示
     QMessageBox::information(this, "完成", "基线采集完成");
 }
-//========================================================
+
 void MainWindow::on_BaglosttestButton_clicked()
 {
     // 使用文件对话框让用户选择文件
@@ -1232,41 +1266,10 @@ void MainWindow::on_BaglosttestButton_clicked()
     }
 }
 
-
-void MainWindow::on_pushButton_4_clicked()
+void MainWindow::on_clearLogButton_clicked()
 {
     ui->textEdit_Log->clear();
 }
-
-
-void MainWindow::on_pushButton_clicked()
-{
-    QVector<int> dacValues;
-
-    // 从10个spinbox获取整型值
-    dacValues << ui->spinBox_dac1->value()
-              << ui->spinBox_dac2->value()
-              << ui->spinBox_dac3->value()
-              << ui->spinBox_dac4->value()
-              << ui->spinBox_dac5->value()
-              << ui->spinBox_dac6->value()
-              << ui->spinBox_dac7->value()
-              << ui->spinBox_dac8->value()
-              << ui->spinBox_dac9->value()
-              << ui->spinBox_dac10->value();
-
-    // 重置进度条
-    ui->progressBar->setRange(0, 1);
-    ui->progressBar->setValue(0);
-    // === 新增：测量开始时禁用手动DAC测量按钮 ===
-    ui->pushButton->setEnabled(false);
-
-    // 调用新的函数
-    commManager->startOneLoop(dacValues);
-
-    logger->info("手动模式启动循环");
-}
-
 
 void MainWindow::on_fanControlButton_clicked()
 {
@@ -1292,3 +1295,83 @@ void MainWindow::on_fanControlButton_clicked()
     }
 }
 
+void MainWindow::on_singleMeasure_clicked()
+{
+    CsvDataRow row;
+    row.ledIntensity = 0.0; // 单次测量时光强设为0
+    row.dacValues[0] = ui->spinBox_dac1->value();
+    row.dacValues[1] = ui->spinBox_dac2->value();   
+    row.dacValues[2] = ui->spinBox_dac3->value();
+    row.dacValues[3] = ui->spinBox_dac4->value();
+    row.dacValues[4] = ui->spinBox_dac5->value();
+    row.dacValues[5] = ui->spinBox_dac6->value();
+    row.dacValues[6] = ui->spinBox_dac7->value();
+    row.dacValues[7] = ui->spinBox_dac8->value();
+    row.dacValues[8] = ui->spinBox_dac9->value();
+    row.dacValues[9] = ui->spinBox_dac10->value();
+    
+    // dataLEDPara.clear();
+    dataLEDPara.append(row);
+
+    // 重置进度条
+    ui->progressBar->setRange(0, 1);
+    ui->progressBar->setValue(0);
+
+    if(ui->singleMeasure->text() == "开始测量")
+    {
+        logger->info("开始单次测量");
+        logger->info(QString("DAC设置值：%1,%2,%3,%4,%5,%6,%7,%8,%9,%10")\
+                        .arg(row.dacValues[0])\
+                        .arg(row.dacValues[1])\
+                        .arg(row.dacValues[2])\
+                        .arg(row.dacValues[3])\
+                        .arg(row.dacValues[4])\
+                        .arg(row.dacValues[5])\
+                        .arg(row.dacValues[6])\
+                        .arg(row.dacValues[7])\
+                        .arg(row.dacValues[8])\
+                        .arg(row.dacValues[9]));
+        //保存界面参数
+        saveUiConfigToJson();
+
+        switch (m_loopType) {
+        case LoopAB:
+            logger->info("设置模式：AB循环");
+            break;
+        case LoopA:
+            logger->info("设置模式：A循环");
+            break;
+        case LoopB:
+            logger->info("设置模式：B循环");
+            break;
+        }
+
+        //禁用界面控件
+        UIcontrolEnable(false);
+
+        //获取界面FPGA相关控制参数
+        CommonUtils::UI_FPGAconfig config;
+        config.LEDWidth = ui->spinBox_LEDWidth->value();
+        config.LightDelayTime = ui->spinBox_lightDelayTime->value();
+        config.TriggerDelayTime = ui->spinBox_TriggerDelayTime->value();
+        config.timesLED = ui->spinBox_timesLED->value();
+        config.RegisterA = m_RegisterA;
+        config.RegisterB = m_RegisterB;
+
+        tempLEDdata.clear();
+        tempLEDdata.push_back(row);
+        
+        m_currentMeasureType = SingleMeasure;
+        commManager->setConfigBeforeLoop(config, m_BLmode, m_loopType);
+        ui->bt_kernelReset->setEnabled(false);
+        ui->bt_startLoop->setEnabled(false);
+        ui->singleMeasure->setText("停止测量");
+    }
+    else{ 
+        //停止测量
+        commManager->insertStopMeasure();
+        // ui->singleMeasure->setEnabled(false);
+        ui->bt_startLoop->setEnabled(false);
+        ui->singleMeasure->setText("开始测量");
+    }
+}

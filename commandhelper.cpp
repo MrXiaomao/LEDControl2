@@ -147,15 +147,15 @@ void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeB
     try {
         jsonConfig_FPGA = CommonUtils::loadUserConfig();
         cmdPool.push_back({QString("温度监测时间间隔%1").arg(jsonConfig_FPGA.TempMonitorGap),
-                            Order::getTempMonitorGap(jsonConfig_FPGA.TempMonitorGap)});
-        cmdPool.push_back({QString("设置同步触发宽度%1").arg(jsonConfig_FPGA.TriggerWidth),
-                            Order::getTriggerWidth(jsonConfig_FPGA.TriggerWidth)});
+                           Order::getTempMonitorGap(jsonConfig_FPGA.TempMonitorGap)});
+        cmdPool.push_back({QString("设置同步触发宽度%1ns").arg(jsonConfig_FPGA.TriggerWidth*10),
+                           Order::getTriggerWidth(jsonConfig_FPGA.TriggerWidth)});
         cmdPool.push_back({QString("配置移位寄存器时钟频率%1").arg(jsonConfig_FPGA.clockFrequency),
-                            Order::getClockFrequency(jsonConfig_FPGA.clockFrequency)});
+                           Order::getClockFrequency(jsonConfig_FPGA.clockFrequency)});
         cmdPool.push_back({QString("配置硬件触发高电平点数%1").arg(jsonConfig_FPGA.HLpoint),
-                            Order::getHLpoint(jsonConfig_FPGA.HLpoint)});
+                           Order::getHLpoint(jsonConfig_FPGA.HLpoint)});
         cmdPool.push_back({QString("配置同步触发次数%1").arg(jsonConfig_FPGA.timesTrigger),
-                            Order::getTimesTrigger(jsonConfig_FPGA.timesTrigger)});
+                           Order::getTimesTrigger(jsonConfig_FPGA.timesTrigger)});
     }
     catch (const std::exception &e) {
         QMessageBox::critical(NULL, "配置错误", e.what());
@@ -166,18 +166,19 @@ void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeB
 
     // 界面的FPGA参数设置
     cmdPool.push_back({QString("配置LED发光宽度%1ns").arg(config.LEDWidth*10), Order::getLEDWidth(config.LEDWidth)});
-    cmdPool.push_back({QString("配置LED发光延迟时间%1ns").arg(config.LightDelayTime*10), Order::getLightDelayTimeA(config.LightDelayTime)});
-    cmdPool.push_back({QString("配置LED发光延迟时间%1ns").arg(config.LightDelayTime*10), Order::getLightDelayTimeB(config.LightDelayTime)});
+    // 减2是因为LED要提前2个时钟周期发光，做修正
+    cmdPool.push_back({QString("配置LED发光延迟时间%1ns").arg(config.LightDelayTime*10), Order::getLightDelayTimeA(config.LightDelayTime-2)});
+    cmdPool.push_back({QString("配置LED发光延迟时间%1ns").arg(config.LightDelayTime*10), Order::getLightDelayTimeB(config.LightDelayTime-2)});
     cmdPool.push_back({QString("配置同步触发延迟时间%1ns").arg(config.TriggerDelayTime*10), Order::getTriggerDelayTimeA(config.TriggerDelayTime)});
     cmdPool.push_back({QString("配置同步触发延迟时间%1ns").arg(config.TriggerDelayTime*10), Order::getTriggerDelayTimeB(config.TriggerDelayTime)});
     cmdPool.push_back({QString("配置LED发光次数%1").arg(config.timesLED), Order::getTimesLED(config.timesLED)});
 
     cmdPool.push_back({QString("配置移位寄存器A，二进制%1，发光位置")
-                            .arg(QString::number(config.RegisterA, 2).rightJustified(16, '0')),
-                            Order::getRegisterConfigA(config.RegisterA)});
+                           .arg(QString::number(config.RegisterA, 2).rightJustified(16, '0')),
+                       Order::getRegisterConfigA(config.RegisterA)});
     cmdPool.push_back({QString("配置移位寄存器B，二进制%1，发光位置")
-                            .arg(QString::number(config.RegisterB, 2).rightJustified(16, '0')),
-                            Order::getRegisterConfigB(config.RegisterB)});
+                           .arg(QString::number(config.RegisterB, 2).rightJustified(16, '0')),
+                       Order::getRegisterConfigB(config.RegisterB)});
 
     cmdPool.push_back({"开启移位寄存器配置", Order::cmd_openRegConfig});
 
@@ -207,21 +208,7 @@ void CommandHelper::startOneLoop(CsvDataRow data)
                       .arg(QString(cmdPool.first().data.toHex(' ')))
                       .arg(cmdPool.first().name));
 }
-//手动模式进行一次测量
-void CommandHelper::startOneLoop(const QVector<int>& dacValuesFromUI)
-{
-    // 创建临时的CsvDataRow对象
-    CsvDataRow tempData;
-    tempData.ledIntensity = 0.0;  // 手动模式设为0
 
-    // 复制DAC值
-    for(int i = 0; i < 10 && i < dacValuesFromUI.size(); i++) {
-        tempData.dacValues[i] = dacValuesFromUI[i];
-    }
-
-    // 调用原有的函数
-    startOneLoop(tempData);
-}
 void CommandHelper::resetFPGA_afterMeasure()
 {
     cmdPool.clear();
@@ -268,7 +255,7 @@ void CommandHelper::stopMeasure()
     case LoopA:
         cmdPool.push_back({"关闭A触发", Order::cmd_closeTriggerA});//关闭B触发
         cmdPool.push_back({"关闭B触发", Order::cmd_closeTriggerB});//关闭A触发
-        cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});//两次关闭硬件触发
+        cmdPool.push_back({"关闭硬件触发", Order::cmd_closeHardTrigger});//关闭硬件触发
         break;
     case LoopB:
         cmdPool.push_back({"关闭B触发", Order::cmd_closeTriggerB});//关闭A触发
@@ -290,12 +277,12 @@ void CommandHelper::stopMeasure()
         //注意发送第一次关闭硬件触发，一定无指令反馈
         send(cmdPool.first().data);
         logger->debug(QString("Send HEX: %1 (%2)")
-                        .arg(QString(cmdPool.first().data.toHex(' ')))
-                        .arg(cmdPool.first().name));
-        
+                          .arg(QString(cmdPool.first().data.toHex(' ')))
+                          .arg(cmdPool.first().name));
+
         cmdPool.erase(cmdPool.begin());
         //延时发送，确保FPGA接受数据不粘包
-        QThread::msleep(50); 
+        QThread::msleep(50);
         break;
     case LoopA:
         break;
@@ -314,15 +301,17 @@ void CommandHelper::startWork()
     // 创建数据解析线程
     NetDataThread = new QLiteThread(this);
 }
+
 //风扇控制函数的实现
 void CommandHelper::controlFan(bool enable)
 {
     if(m_SerialPort.isOpen()) {
         QByteArray fanCmd = Order::getFanControl(enable);
 
-        // === 修改：将风扇指令加入到cmdPool中 ===
+        // 将风扇指令加入到cmdPool中
         cmdPool.clear();  // 清空之前的命令
         cmdPool.push_back({enable ? "开启风扇" : "关闭风扇", fanCmd});
+
         send(cmdPool.first().data);
         logger->debug(QString("发送风扇控制指令: %1 (%2)")
                           .arg(QString(fanCmd.toHex(' ')))
@@ -332,6 +321,7 @@ void CommandHelper::controlFan(bool enable)
         logger->fatal("串口未连接, 无法控制风扇");
     }
 }
+
 void CommandHelper::handleData(QByteArray data)
 {
     logger->debug(QString("Recv HEX: %1").arg(QString(data.toHex(' '))));
@@ -382,7 +372,7 @@ void CommandHelper::handleData(QByteArray data)
 
         switch (m_loopType) {
         case LoopAB:
-            if(data == Order::cmd_measureFinishAB) 
+            if(data == Order::cmd_measureFinishAB)
             {
                 logger->debug("接受到测量完成指令");
                 resetFPGA_afterMeasure();
@@ -390,7 +380,7 @@ void CommandHelper::handleData(QByteArray data)
             }
             break;
         case LoopA:
-            if(data == Order::cmd_measureFinishA) 
+            if(data == Order::cmd_measureFinishA)
             {
                 logger->debug("接受到测量完成指令");
                 resetFPGA_afterMeasure();
@@ -398,7 +388,7 @@ void CommandHelper::handleData(QByteArray data)
             }
             break;
         case LoopB:
-            if(data == Order::cmd_measureFinishB) 
+            if(data == Order::cmd_measureFinishB)
             {
                 logger->debug("接受到测量完成指令");
                 resetFPGA_afterMeasure();
@@ -443,10 +433,6 @@ void CommandHelper::handleData(QByteArray data)
                 if(data.size()>0)logger->debug(QString("error Recv HEX: %1").arg(QString(data.toHex(' '))));
 
                 logger->debug(tr("Looping返回指令与发送指令不一致"));
-                // send(cmdPool.first().data);
-                // logger->debug(QString("Send HEX: %1 (%2)")
-                //                   .arg(QString(cmdPool.first().data.toHex(' ')))
-                //                   .arg(cmdPool.first().name));
             }
         }
         return;
@@ -478,50 +464,50 @@ void CommandHelper::handleData(QByteArray data)
     else{
         switch(workStatus)
         {
-            // 进行状态切换，触发下一个流程的进行
-            case Preparing:
-                workStatus = Prepared;
-                emit sigReset_finished();
-                break;
-            case Stopping:
-                workStatus = Prepared;
-                emit sigLoop_stoped();
-                break;
-            case ConfigBeforeLoop:
-                emit sigConfigFinished();
-                break;
-            case LoopStep1:
-                //电压稳定时间
-                logger->debug(QString("电压稳定时间:%1ms").arg(jsonConfig_FPGA.PowerStableTime));
-                QThread::msleep(jsonConfig_FPGA.PowerStableTime);
+        // 进行状态切换，触发下一个流程的进行
+        case Preparing:
+            workStatus = Prepared;
+            emit sigReset_finished();
+            break;
+        case Stopping:
+            workStatus = Prepared;
+            emit sigLoop_stoped();
+            break;
+        case ConfigBeforeLoop:
+            emit sigConfigFinished();
+            break;
+        case LoopStep1:
+            //电压稳定时间
+            logger->debug(QString("电压稳定时间:%1ms").arg(jsonConfig_FPGA.PowerStableTime));
+            QThread::msleep(jsonConfig_FPGA.PowerStableTime);
 
-                //开启硬件触发
-                switch (m_loopType) {
-                case LoopAB:
-                    cmdPool.push_back({"开启硬件触发[亮A、亮B、亮AB模式]", Order::cmd_TriggerAB_On});
-                    break;
-                case LoopA:
-                    cmdPool.push_back({"开启硬件触发[亮A模式]", Order::cmd_TriggerA_On});
-                    break;
-                case LoopB:
-                    cmdPool.push_back({"开启硬件触发[亮B模式]", Order::cmd_TriggerB_On});
-                    break;
-                }
-                
-                send(cmdPool.first().data);
-                logger->debug(QString("Send HEX: %1 (%2)")
-                                  .arg(QString(cmdPool.first().data.toHex(' ')))
-                                  .arg(cmdPool.first().name));
-                workStatus = Looping;
-                mReceiveTriger = false;
+            //开启硬件触发
+            switch (m_loopType) {
+            case LoopAB:
+                cmdPool.push_back({"开启硬件触发[亮A、亮B、亮AB模式]", Order::cmd_TriggerAB_On});
                 break;
-            case Resetting:
-                emit sigFinishCurrentloop();
+            case LoopA:
+                cmdPool.push_back({"开启硬件触发[亮A模式]", Order::cmd_TriggerA_On});
                 break;
-            case NoWork: //不做动作，通知界面恢复使能
-                emit sigRebackUnbale();
-            default:
+            case LoopB:
+                cmdPool.push_back({"开启硬件触发[亮B模式]", Order::cmd_TriggerB_On});
                 break;
+            }
+
+            send(cmdPool.first().data);
+            logger->debug(QString("Send HEX: %1 (%2)")
+                              .arg(QString(cmdPool.first().data.toHex(' ')))
+                              .arg(cmdPool.first().name));
+            workStatus = Looping;
+            mReceiveTriger = false;
+            break;
+        case Resetting:
+            emit sigFinishCurrentloop();
+            break;
+        case NoWork: //不做动作，通知界面恢复使能
+            emit sigRebackUnbale();
+        default:
+            break;
         }
     }
 }

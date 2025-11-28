@@ -11,6 +11,13 @@ struct CsvDataRow {
     int dacValues[10];    // 其他列：DAC值（int）
 };
 
+// === 新增：测量类型枚举 ===
+enum MeasureType {
+    NoMeasure = 0, // 无测量
+    LoopMeasure,    // 循环测量
+    SingleMeasure   // 单次测量
+};
+
 //采集基线的类型
 enum ModeBLSample {
     ManualBL = 0, // 手动

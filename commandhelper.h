@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-10-26 17:03:54
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-10-31 11:17:16
+ * @LastEditTime: 2025-11-28 20:34:43
  * @Description: 请填写简介
  */
 #ifndef COMMANDHELPER_H
@@ -50,8 +50,6 @@ public:
 
     //进行一次测量
     void startOneLoop(CsvDataRow data);
-    //新增手动模式
-    void startOneLoop(const QVector<int>& dacValuesFromUI);
 
     //测量结束后恢复状态
     void resetFPGA_afterMeasure();
@@ -61,14 +59,13 @@ public:
 
     //串口开始工作
     void startWork();
-    // 风扇控制
-    void controlFan(bool enable);
 
     //网口原始数据解析线程
     void netFrameWorkThead();
+    // === 新增：风扇控制函数声明 ===
+    void controlFan(bool enable);
 
     bool getSerialPortStatus(){return m_SerialPort.isOpen();}
-
 
 protected:
     enum WorkStatusFlag {

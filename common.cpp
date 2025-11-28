@@ -5,7 +5,6 @@
 #include <QDebug>
 
 QString CommonUtils::jsonPath = "./config/setting.json";
-//上传新内容
 
 // ============ 基础函数 =============
 QJsonObject CommonUtils::ReadSetting()
@@ -32,7 +31,7 @@ QJsonObject CommonUtils::ReadSetting()
 void CommonUtils::WriteSetting(QJsonObject myJson)
 {
     QFile file(jsonPath);
-    if (!file.open(QIODevice::WriteOnly)) {
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         qWarning() << "无法写入配置文件:" << jsonPath;
         return;
     }
@@ -49,9 +48,9 @@ CommonUtils::UserConfig CommonUtils::loadUserConfig()
     QJsonObject user = root.value("User").toObject();
 
     QStringList requiredKeys = {
-        "PowerStableTime",
-        "TempMonitorGap",
-        "TriggerWidth",
+        "PowerStableTime(ms)",
+        "TempMonitorGap(s)",
+        "TriggerWidth(*10ns)",
         "clockFrequency",
         "HLpoint",
         "timesTrigger"
@@ -67,9 +66,9 @@ CommonUtils::UserConfig CommonUtils::loadUserConfig()
 
     // 全部存在，安全读取
     UserConfig config;
-    config.PowerStableTime = user.value("PowerStableTime").toInt(10);
-    config.TempMonitorGap  = static_cast<unsigned short>(user.value("TempMonitorGap").toInt(1));
-    config.TriggerWidth    = user.value("TriggerWidth").toInt(1000);
+    config.PowerStableTime = user.value("PowerStableTime(ms)").toInt(10);
+    config.TempMonitorGap  = static_cast<unsigned short>(user.value("TempMonitorGap(s)").toInt(1));
+    config.TriggerWidth    = user.value("TriggerWidth(*10ns)").toInt(10);
     config.clockFrequency  = user.value("clockFrequency").toInt(10);
     config.HLpoint         = user.value("HLpoint").toInt(1);
     config.timesTrigger    = user.value("timesTrigger").toInt(1000);

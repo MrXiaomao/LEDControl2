@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-11-09 20:44:23
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-11-09 21:37:24
+ * @LastEditTime: 2025-11-28 21:50:55
  * @Description: 请填写简介
  */
 #ifndef MAINWINDOW_H
@@ -79,16 +79,16 @@ private slots:
 //=======================================
     void onBaseLineSampleFinished();  // 新增：基线采集完成处理
 //=======================================
-    void on_fanControlButton_clicked();//新增风扇控制
-//=======================================
 
-    void on_pushButton_4_clicked();
+    void on_clearLogButton_clicked();
 
     void onLoopTypeChanged();
 
-    void on_pushButton_clicked();
+    void on_singleMeasure_clicked();
+    
+    void on_action_about_triggered();
 
-
+    void on_fanControlButton_clicked();//新增风扇控制
 
 private:
     LogParser parser;
@@ -109,5 +109,6 @@ private:
     QList<int> m_bitMap; // 位号映射表：索引对应check1~check10，值为对应位号
     ModeLoop m_loopType = LoopAB;
     bool m_fanStatus = false;  // 风扇状态：false=关闭, true=开启
+    MeasureType m_currentMeasureType = NoMeasure; // 当前测量类型
 };
 #endif // MAINWINDOW_H
