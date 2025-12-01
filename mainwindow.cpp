@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-10-26 10:14:52
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-11-28 23:51:43
+ * @LastEditTime: 2025-12-01 12:45:35
  * @Description: 请填写简介
  */
 #include "mainwindow.h"
@@ -31,6 +31,12 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    ui->packageLostCount->hide();
+    ui->label_13->hide();
+    ui->lineEdit_Temp1->hide();
+    ui->lineEdit_Temp2->hide();
+    ui->lineEdit_Temp3->hide();
+    ui->lineEdit_Temp4->hide();
 
     // 步骤1：将check1~check10按顺序加入列表（索引0~9对应check1~check10）
     m_checksA << ui->checkA1
@@ -1211,7 +1217,7 @@ void MainWindow::onBaseLineSampleFinished()
     QMessageBox::information(this, "完成", "基线采集完成");
 }
 
-void MainWindow::on_BaglosttestButton_clicked()
+void MainWindow::on_packageLostCount_clicked()
 {
     // 使用文件对话框让用户选择文件
     QString filePath = QFileDialog::getOpenFileName

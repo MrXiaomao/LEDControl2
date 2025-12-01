@@ -49,7 +49,7 @@ private:
 signals:
 
 private slots:
-    void on_BaglosttestButton_clicked();
+    void on_packageLostCount_clicked();
     void btnSelectFile_clicked();
     void onLogMessage(const QString& message); // 新增日志槽函数
     void OnUpdateReceive(QString str);

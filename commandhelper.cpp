@@ -155,7 +155,7 @@ void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeB
     cmdPool.push_back({"关闭硬件触发[只亮B模式]", Order::cmd_closeTriggerB});
     cmdPool.push_back({"关闭基线采样", Order::cmd_closeBLSamlpe});
     cmdPool.push_back({"复位寄存器", Order::cmd_resetRegister});
-    cmdPool.push_back({"关闭温度监测", Order::cmd_closeTempMonitor});
+    // cmdPool.push_back({"关闭温度监测", Order::cmd_closeTempMonitor});
 
     //setting.json文件中的设置
     QJsonObject jsonSetting = CommonUtils::ReadSetting();
@@ -210,6 +210,9 @@ void CommandHelper::setConfigBeforeLoop(CommonUtils::UI_FPGAconfig config, ModeB
 void CommandHelper::startOneLoop(CsvDataRow data)
 {
     cmdPool.clear();
+    //开启温度
+    // cmdPool.push_back({"开启温度监测", Order::cmd_openTempMonitor});
+
     //配置DAC数据
     for(int i=0; i<10; i++)
     {
@@ -285,7 +288,7 @@ void CommandHelper::stopMeasure()
     cmdPool.push_back({"关闭DAC配置", Order::cmd_closeDAC});
     cmdPool.push_back({"关闭基线采样", Order::cmd_closeBLSamlpe});
     cmdPool.push_back({"复位移位寄存器", Order::cmd_resetRegister});
-    cmdPool.push_back({"关闭温度监测", Order::cmd_closeTempMonitor});
+    // cmdPool.push_back({"关闭温度监测", Order::cmd_closeTempMonitor});
 
     workStatus = Stopping;
 
