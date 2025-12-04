@@ -847,6 +847,10 @@ void MainWindow::on_pushButtonOpen_clicked()
 //循环测量
 void MainWindow::on_bt_startLoop_clicked()
 {
+    if (ui->singleMeasure->text() == "停止测量") {
+        QMessageBox::warning(this, "警告", "请先停止单次测量");
+        return;
+    }
     //开始循环
     if(ui->bt_startLoop->text() == "开始循环")
     {
@@ -1343,7 +1347,7 @@ void MainWindow::on_fanControlButton_clicked()
     m_fanStatus = !m_fanStatus;
 
     // 发送风扇控制指令
-    commManager->controlFan(true);
+    commManager->controlFan(m_fanStatus);
 
     // 更新按钮文本
     if (m_fanStatus) {
@@ -1357,6 +1361,10 @@ void MainWindow::on_fanControlButton_clicked()
 
 void MainWindow::on_singleMeasure_clicked()
 {
+    if (ui->bt_startLoop->text() == "停止循环") {
+        QMessageBox::warning(this, "警告", "请先停止循环测量");
+        return;
+    }
     if(ui->singleMeasure->text() == "开始测量")
     {
         CsvDataRow row;
