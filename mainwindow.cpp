@@ -1463,5 +1463,15 @@ void MainWindow::on_singleMeasure_clicked()
         // ui->singleMeasure->setEnabled(false);
         ui->bt_startLoop->setEnabled(false);
         ui->singleMeasure->setText("开始测量");
+        ui->spinBox_dac1->setEnabled(true);
+        ui->spinBox_dac2->setEnabled(true);
+        ui->spinBox_dac3->setEnabled(true);
+        ui->spinBox_dac4->setEnabled(true);
+        ui->spinBox_dac5->setEnabled(true);
+        ui->spinBox_dac6->setEnabled(true);
+        ui->spinBox_dac7->setEnabled(true);
+        ui->spinBox_dac8->setEnabled(true);
+        ui->spinBox_dac9->setEnabled(true);
+        ui->spinBox_dac10->setEnabled(true);
     }
 }
