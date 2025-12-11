@@ -673,7 +673,17 @@ void MainWindow::slot_finishedOneLoop()
         {
             logger->info("单次测量完成");
             ui->singleMeasure->setText("开始测量");
-        }
+            ui->spinBox_dac1->setEnabled(true);
+            ui->spinBox_dac2->setEnabled(true);
+            ui->spinBox_dac3->setEnabled(true);
+            ui->spinBox_dac4->setEnabled(true);
+            ui->spinBox_dac5->setEnabled(true);
+            ui->spinBox_dac6->setEnabled(true);
+            ui->spinBox_dac7->setEnabled(true);
+            ui->spinBox_dac8->setEnabled(true);
+            ui->spinBox_dac9->setEnabled(true);
+            ui->spinBox_dac10->setEnabled(true);
+            }
 
         // 测量完成时重新启用手动DAC测量按钮 ===
         ui->singleMeasure->setEnabled(true);
@@ -904,6 +914,7 @@ void MainWindow::on_bt_startLoop_clicked()
         commManager->setConfigBeforeLoop(config, m_BLmode, m_loopType);
         ui->bt_kernelReset->setEnabled(false);
         ui->bt_startLoop->setText("停止循环");
+        ui->singleMeasure->setEnabled(false);
     }
     else{ 
         logger->info("点击停止循环测量");
@@ -1431,6 +1442,18 @@ void MainWindow::on_singleMeasure_clicked()
         m_currentMeasureType = SingleMeasure;
         commManager->setConfigBeforeLoop(config, m_BLmode, m_loopType);
         ui->bt_kernelReset->setEnabled(false);
+        //===============================
+        ui->spinBox_dac1->setEnabled(false);
+        ui->spinBox_dac2->setEnabled(false);
+        ui->spinBox_dac3->setEnabled(false);
+        ui->spinBox_dac4->setEnabled(false);
+        ui->spinBox_dac5->setEnabled(false);
+        ui->spinBox_dac6->setEnabled(false);
+        ui->spinBox_dac7->setEnabled(false);
+        ui->spinBox_dac8->setEnabled(false);
+        ui->spinBox_dac9->setEnabled(false);
+        ui->spinBox_dac10->setEnabled(false);
+        //===============================
         ui->bt_startLoop->setEnabled(false);
         ui->singleMeasure->setText("停止测量");
     }
