@@ -381,6 +381,7 @@ void CommandHelper::handleData(QByteArray data)
         if(stopFlag) {
             stopMeasure();
             stopFlag = false;
+            return;
         }
 
         switch (m_loopType) {
@@ -461,6 +462,19 @@ void CommandHelper::handleData(QByteArray data)
             }
         }
         return;
+    }
+
+    // 3、停止测量过程中,特别处理测量完成指令（12 F5 00 00 DD），
+    // 有可能在发送两次停止测量的时候，程序已经返回测量完成指令
+    if(workStatus == Stopping)
+    {
+        if(data == Order::cmd_measureFinishA ||
+           data == Order::cmd_measureFinishB ||
+           data == Order::cmd_measureFinishAB)
+        {
+            logger->debug("接受到测量完成指令");
+            return;
+        }
     }
 
     // 判断接收指令与发送指令是否一致
