@@ -190,17 +190,37 @@ void MainWindow::refreshSerialPort()
     }
 
     int insertIndex = 0;
-    if (!currentPort.isEmpty()) {
+    
+    // === 优先显示 QinHeng CH340 serial ===
+    bool foundCH340 = false;
+    for (auto &p : portNameList) {
+        QString desc = QString::fromLocal8Bit(p.description);
+        if (desc.contains("QinHeng CH340", Qt::CaseInsensitive)) {
+            QString name = QString::fromLocal8Bit(p.portName);
+            QString showText = desc.isEmpty() ? name : QString("%1 : %2").arg(name, desc);
+            ui->comboBoxPortName->insertItem(insertIndex++, showText, name);
+            foundCH340 = true;
+            break;
+        }
+    }
+
+    // === 其他端口 ===
+    if (!currentPort.isEmpty() && (!foundCH340 || currentPort != ui->comboBoxPortName->currentData().toString())) {
         ui->comboBoxPortName->insertItem(insertIndex++, currentPort, currentPort);
     }
 
     for (auto &p : portNameList) {
         QString name = QString::fromLocal8Bit(p.portName);
+        QString desc = QString::fromLocal8Bit(p.description);
+        
+        // 跳过已经添加过的 CH340
+        if (foundCH340 && desc.contains("QinHeng CH340", Qt::CaseInsensitive)) {
+            continue;
+        }
+        // 跳过当前选中的端口
         if (name == currentPort) continue;
 
-        QString desc = QString::fromLocal8Bit(p.description);
         QString showText = desc.isEmpty() ? name : QString("%1 : %2").arg(name, desc);
-
         ui->comboBoxPortName->insertItem(insertIndex++, showText, name);
     }
 
@@ -915,6 +935,18 @@ void MainWindow::on_bt_startLoop_clicked()
         ui->bt_kernelReset->setEnabled(false);
         ui->bt_startLoop->setText("停止循环");
         ui->singleMeasure->setEnabled(false);
+        //=======================================
+        ui->spinBox_dac1->setEnabled(false);
+        ui->spinBox_dac2->setEnabled(false);
+        ui->spinBox_dac3->setEnabled(false);
+        ui->spinBox_dac4->setEnabled(false);
+        ui->spinBox_dac5->setEnabled(false);
+        ui->spinBox_dac6->setEnabled(false);
+        ui->spinBox_dac7->setEnabled(false);
+        ui->spinBox_dac8->setEnabled(false);
+        ui->spinBox_dac9->setEnabled(false);
+        ui->spinBox_dac10->setEnabled(false);
+        //=======================================
     }
     else{ 
         logger->info("点击停止循环测量");
@@ -925,6 +957,16 @@ void MainWindow::on_bt_startLoop_clicked()
         ui->bt_startLoop->setEnabled(false);
         // ui->bt_kernelReset->setEnabled(true);
         ui->bt_startLoop->setText("开始循环");
+        ui->spinBox_dac1->setEnabled(true);
+        ui->spinBox_dac2->setEnabled(true);
+        ui->spinBox_dac3->setEnabled(true);
+        ui->spinBox_dac4->setEnabled(true);
+        ui->spinBox_dac5->setEnabled(true);
+        ui->spinBox_dac6->setEnabled(true);
+        ui->spinBox_dac7->setEnabled(true);
+        ui->spinBox_dac8->setEnabled(true);
+        ui->spinBox_dac9->setEnabled(true);
+        ui->spinBox_dac10->setEnabled(true);
     }
 }
 
