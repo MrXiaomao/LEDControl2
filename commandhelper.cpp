@@ -16,6 +16,9 @@ CommandHelper::CommandHelper(QObject *parent)
 
     // 测试版本信息
     logger->info(QString::fromStdString(m_SerialPort.getVersion()));
+
+    // 初始化去重缓存
+    lastReceivedFrame.clear();
 }
 
 CommandHelper::~CommandHelper()
@@ -40,11 +43,59 @@ void CommandHelper::onReadEvent(const char *portName, unsigned int readBufferLen
             mutexCache.lock();
             cachePool.append(byteArray);
 
-            // 检查是否够一个完整包
+            // 检查并从缓存中提取完整包（5 字节)，实现帧边界校验与重同步
+            // 帧格式假定为：0x12 ... 0xDD（长度固定 5）
             while (cachePool.size() >= 5)
             {
-                QByteArray frame = cachePool.left(5); // 取前 5 个字节
-                cachePool.remove(0, 5);               // 从缓存中移除
+                // 在缓存中寻找可能的帧起始位置（0x12）
+                int startIdx = -1;
+                for (int i = 0; i <= cachePool.size() - 5; ++i) {
+                    if (static_cast<unsigned char>(cachePool[i]) == 0x12) { startIdx = i; break; }
+                }
+
+                if (startIdx == -1) {
+                    // 找不到可能的起始字节，保留最后最多 4 个字节作为半包，丢弃其余
+                    int keep = cachePool.size() < 4 ? cachePool.size() : 4;
+                    if (cachePool.size() > keep) {
+                        QByteArray dropped = cachePool.left(cachePool.size() - keep);
+                        cachePool.remove(0, cachePool.size() - keep);
+                        logger->debug(QString("丢弃 %1 字节（未找到帧起始）：%2")
+                                      .arg(dropped.size()).arg(QString(dropped.toHex(' '))));
+                    }
+                    break; // 等待更多字节
+                }
+
+                if (startIdx > 0) {
+                    // 丢弃起始字节之前的垃圾数据
+                    QByteArray dropped = cachePool.left(startIdx);
+                    cachePool.remove(0, startIdx);
+                    logger->debug(QString("丢弃 %1 字节（起始前垃圾）：%2")
+                                  .arg(dropped.size()).arg(QString(dropped.toHex(' '))));
+                }
+
+                // 如果现在剩余字节不足以形成完整帧，等待更多数据
+                if (cachePool.size() < 5) break;
+
+                // 检查帧尾是否符合 0xDD
+                if (static_cast<unsigned char>(cachePool[4]) != 0xDD) {
+                    // 起始位不成立，丢弃这一个起始字节并继续寻找
+                    QByteArray bad = cachePool.left(1);
+                    cachePool.remove(0, 1);
+                    logger->debug(QString("发现可能起始字节但尾部不匹配，丢弃字节：%1").arg(QString(bad.toHex(' '))));
+                    continue;
+                }
+
+                // 成功得到一个完整帧
+                QByteArray frame = cachePool.left(5);
+                cachePool.remove(0, 5);
+
+                // 去重：如果与上一帧相同，则忽略（防止 FPGA 重复回环回复）
+                if (frame == lastReceivedFrame) {
+                    logger->debug(QString("忽略重复帧: %1").arg(QString(frame.toHex(' '))));
+                    continue;
+                }
+
+                lastReceivedFrame = frame;
                 emit sigUpdateData(frame);            // 发出一个完整帧
             }
             mutexCache.unlock();
@@ -232,7 +283,7 @@ void CommandHelper::startOneLoop(CsvDataRow data)
 void CommandHelper::resetFPGA_afterMeasure()
 {
     cmdPool.clear();
-    cmdPool.push_back({"关闭电源", Order::cmd_closePower});
+    cmdPool.push_back({"关闭电源", Order::cmd_closePower});//
     cmdPool.push_back({"关闭DAC配置", Order::cmd_closeDAC});
     cmdPool.push_back({"关闭硬件触发[亮A、亮B、亮AB模式]", Order::cmd_closeHardTrigger});
     cmdPool.push_back({"关闭硬件触发[只亮A模式]", Order::cmd_closeTriggerA});

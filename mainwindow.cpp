@@ -191,36 +191,33 @@ void MainWindow::refreshSerialPort()
 
     int insertIndex = 0;
     
-    // === 优先显示 QinHeng CH340 serial ===
-    bool foundCH340 = false;
+    // 优先显示 QinHeng CH340 串口
+    QString preferredPort;
     for (auto &p : portNameList) {
         QString desc = QString::fromLocal8Bit(p.description);
-        if (desc.contains("QinHeng CH340", Qt::CaseInsensitive)) {
+        if (desc.contains("QinHeng") && desc.contains("CH340")) {
             QString name = QString::fromLocal8Bit(p.portName);
-            QString showText = desc.isEmpty() ? name : QString("%1 : %2").arg(name, desc);
+            preferredPort = name;
+            QString showText = QString("%1 : %2").arg(name, desc);
             ui->comboBoxPortName->insertItem(insertIndex++, showText, name);
-            foundCH340 = true;
+            logger->info(QString("检测到 QinHeng CH340 串口：%1").arg(name));
             break;
         }
     }
 
-    // === 其他端口 ===
-    if (!currentPort.isEmpty() && (!foundCH340 || currentPort != ui->comboBoxPortName->currentData().toString())) {
+    // 如果有当前连接的串口且不是 CH340，则次序显示
+    if (!currentPort.isEmpty() && currentPort != preferredPort) {
         ui->comboBoxPortName->insertItem(insertIndex++, currentPort, currentPort);
     }
 
+    // 添加其他串口
     for (auto &p : portNameList) {
         QString name = QString::fromLocal8Bit(p.portName);
-        QString desc = QString::fromLocal8Bit(p.description);
-        
-        // 跳过已经添加过的 CH340
-        if (foundCH340 && desc.contains("QinHeng CH340", Qt::CaseInsensitive)) {
-            continue;
-        }
-        // 跳过当前选中的端口
-        if (name == currentPort) continue;
+        if (name == preferredPort || name == currentPort) continue;
 
+        QString desc = QString::fromLocal8Bit(p.description);
         QString showText = desc.isEmpty() ? name : QString("%1 : %2").arg(name, desc);
+
         ui->comboBoxPortName->insertItem(insertIndex++, showText, name);
     }
 
@@ -877,6 +874,8 @@ void MainWindow::on_pushButtonOpen_clicked()
 //循环测量
 void MainWindow::on_bt_startLoop_clicked()
 {
+    //设置1-10毫秒随机延迟
+    random_sleep_ms(1,10);
     if (ui->singleMeasure->text() == "停止测量") {
         QMessageBox::warning(this, "警告", "请先停止单次测量");
         return;
@@ -947,6 +946,7 @@ void MainWindow::on_bt_startLoop_clicked()
         ui->spinBox_dac9->setEnabled(false);
         ui->spinBox_dac10->setEnabled(false);
         //=======================================
+        ui->lEdit_File->setEnabled(false);
     }
     else{ 
         logger->info("点击停止循环测量");
@@ -967,6 +967,7 @@ void MainWindow::on_bt_startLoop_clicked()
         ui->spinBox_dac8->setEnabled(true);
         ui->spinBox_dac9->setEnabled(true);
         ui->spinBox_dac10->setEnabled(true);
+        ui->lEdit_File->setEnabled(true);
     }
 }
 
@@ -1498,6 +1499,7 @@ void MainWindow::on_singleMeasure_clicked()
         //===============================
         ui->bt_startLoop->setEnabled(false);
         ui->singleMeasure->setText("停止测量");
+        ui->lEdit_File->setEnabled(false);
     }
     else{ 
         //停止测量
@@ -1515,5 +1517,14 @@ void MainWindow::on_singleMeasure_clicked()
         ui->spinBox_dac8->setEnabled(true);
         ui->spinBox_dac9->setEnabled(true);
         ui->spinBox_dac10->setEnabled(true);
+        ui->lEdit_File->setEnabled(true);
     }
+}
+void MainWindow::random_sleep_ms(int min_ms, int max_ms)
+{
+    static std::random_device rd;  // 随机数生成器种子
+    static std::mt19937 gen(rd()); // Mersenne Twister 引擎
+    std::uniform_int_distribution<> dis(min_ms, max_ms);
+    int sleep_duration = dis(gen);
+    QThread::msleep(sleep_duration);
 }

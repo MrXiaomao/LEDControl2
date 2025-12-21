@@ -20,6 +20,7 @@
 #include <QCheckBox>
 
 #include "uilogappender.h"
+#include<random>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -79,6 +80,8 @@ private slots:
     void on_bt_refreshPort_clicked();
 //=======================================
     void onBaseLineSampleFinished();  // 新增：基线采集完成处理
+
+    void random_sleep_ms(int min_ms, int max_ms); //新增随机延时函数
 //=======================================
 
     void on_clearLogButton_clicked();
