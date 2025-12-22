@@ -10,6 +10,7 @@
 
 #include "qlitethread.h"
 #include <QMutex>
+#include <QByteArray>
 #include "common.h"
 #include <log4qt/logger.h>
 #include "order.h"
@@ -43,7 +44,7 @@ public:
     QString lastErrorMsg() const { return m_lastErrorMsg; }
 
     //采集基线
-    void baseLineSample_manual();
+    void baseLineSample_manual(int timesLED);
 
     //先关闭之前FPGA的状态，循环前的准备工作
     void ressetFPGA();
@@ -117,6 +118,8 @@ private:
     CSerialPort m_SerialPort;
     QVector<CommandItem> cmdPool;
     QByteArray cachePool;
+    // 上一次已处理的完整帧，用于去重与重同步检测
+    QByteArray lastReceivedFrame;
     QLiteThread* NetDataThread;//处理网络数据线程
     bool taskFinished = false;
     QMutex mutexCache;

@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-11-09 20:44:23
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-11-28 23:10:29
+ * @LastEditTime: 2025-12-22 22:05:26
  * @Description: 请填写简介
  */
 #ifndef MAINWINDOW_H
@@ -20,6 +20,7 @@
 #include <QCheckBox>
 
 #include "uilogappender.h"
+#include<random>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -71,7 +72,7 @@ private slots:
 
     void on_bt_kernelReset_clicked();
 
-    void on_bt_baseLineSample_clicked();
+    void on_bt_baseLineSample_clicked(); //手动采集基线
 
     // 基线采集模式选择
     void onBLmodeToggled(bool checked);
@@ -79,6 +80,8 @@ private slots:
     void on_bt_refreshPort_clicked();
 //=======================================
     void onBaseLineSampleFinished();  // 新增：基线采集完成处理
+
+    void random_sleep_ms(int min_ms, int max_ms); //新增随机延时函数，用于测试
 //=======================================
 
     void on_clearLogButton_clicked();
