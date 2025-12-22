@@ -874,8 +874,10 @@ void MainWindow::on_pushButtonOpen_clicked()
 //循环测量
 void MainWindow::on_bt_startLoop_clicked()
 {
+    /*
     //设置1-10毫秒随机延迟
     random_sleep_ms(1,10);
+    */
     if (ui->singleMeasure->text() == "停止测量") {
         QMessageBox::warning(this, "警告", "请先停止单次测量");
         return;

@@ -120,6 +120,9 @@ private:
     QByteArray cachePool;
     // 上一次已处理的完整帧，用于去重与重同步检测
     QByteArray lastReceivedFrame;
+    // 不一致重试计数器：收到非预期回复时尝试重发，超过阈值后才发出异常
+    int m_mismatchRetry = 0;
+    int m_maxMismatchRetry = 3; // 可根据需要调整
     QLiteThread* NetDataThread;//处理网络数据线程
     bool taskFinished = false;
     QMutex mutexCache;
