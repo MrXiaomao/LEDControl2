@@ -19,6 +19,8 @@ CommandHelper::CommandHelper(QObject *parent)
 
     // 初始化去重缓存
     lastReceivedFrame.clear();
+    // 初始化不一致重试计数
+    m_mismatchRetry = 0;
 }
 
 CommandHelper::~CommandHelper()
@@ -415,6 +417,8 @@ void CommandHelper::handleData(QByteArray data)
     {
         if(data == Order::cmd_BLSamlpeFinish){
             workStatus = Prepared;
+            // 成功收到预期应答，重置重试计数
+            m_mismatchRetry = 0;
             emit sigBLSampleFinished();
             return;
         }
@@ -423,6 +427,8 @@ void CommandHelper::handleData(QByteArray data)
     {
         if(data == Order::cmd_BLSamlpeFinish){
             workStatus = Prepared;
+            // 成功收到预期应答，重置重试计数
+            m_mismatchRetry = 0;
             emit sigFinishCurrentloop();
             return;
         }
@@ -505,12 +511,32 @@ void CommandHelper::handleData(QByteArray data)
         }
         else
         {
-            QByteArray command = cmdPool.first().data;
-            bool isCmdEqual = (data == command);
-            if (!isCmdEqual){
-                if(data.size()>0)logger->debug(QString("error Recv HEX: %1").arg(QString(data.toHex(' '))));
+            if (cmdPool.size() > 0) {
+                QByteArray command = cmdPool.first().data;
+                bool isCmdEqual = (data == command);
+                if (!isCmdEqual){
+                    if(data.size()>0) logger->debug(QString("error Recv HEX: %1").arg(QString(data.toHex(' '))));
 
-                logger->debug(tr("Looping返回指令与发送指令不一致"));
+                    // 重试一次并计数，超过阈值才触发异常
+                    send(cmdPool.first().data);
+                    logger->debug(QString("Send HEX: %1 (%2) [mismatch retry %3/%4]")
+                                      .arg(QString(cmdPool.first().data.toHex(' ')))
+                                      .arg(cmdPool.first().name)
+                                      .arg(m_mismatchRetry+1)
+                                      .arg(m_maxMismatchRetry));
+
+                    m_mismatchRetry++;
+                    if (m_mismatchRetry >= m_maxMismatchRetry) {
+                        m_mismatchRetry = 0;
+                        logger->error("达到最大重试次数（Looping），触发异常终止");
+                        emit sigRebackUnbale();
+                    }
+                } else {
+                    // 收到预期应答，重置重试计数
+                    m_mismatchRetry = 0;
+                }
+            } else {
+                logger->debug(tr("Looping收到与发送不一致，但没有待发命令"));
             }
         }
         return;
@@ -530,20 +556,33 @@ void CommandHelper::handleData(QByteArray data)
     }
 
     // 判断接收指令与发送指令是否一致
-    QByteArray command = cmdPool.first().data;
-    bool isCmdEqual = (data == command);
-    if (!isCmdEqual){
-        if(cmdPool.size()>0){
-            send(cmdPool.first().data);
-            logger->debug(QString("Send HEX: %1 (%2)")
-                              .arg(QString(cmdPool.first().data.toHex(' ')))
-                              .arg(cmdPool.first().name));
-        }
-        logger->debug(tr("返回指令与发送指令不一致"));
-        emit sigRebackUnbale(); //异常终止测量
+    if (cmdPool.size() == 0) {
+        logger->debug("收到指令但没有待发命令，忽略");
         return;
     }
+    QByteArray command = cmdPool.first().data;
+    bool isCmdEqual = (data == command);
+    if (!isCmdEqual){ 
+        if(cmdPool.size()>0){
+            send(cmdPool.first().data);
+            logger->debug(QString("Send HEX: %1 (%2) [mismatch retry %3/%4]")
+                              .arg(QString(cmdPool.first().data.toHex(' ')))
+                              .arg(cmdPool.first().name)
+                              .arg(m_mismatchRetry+1)
+                              .arg(m_maxMismatchRetry));
+        }
 
+        m_mismatchRetry++;
+        logger->debug(tr("返回指令与发送指令不一致"));
+        if (m_mismatchRetry >= m_maxMismatchRetry) {
+            m_mismatchRetry = 0;
+            logger->error("达到最大重试次数，触发异常终止");
+            emit sigRebackUnbale(); //异常终止测量
+        }
+        return;
+    }
+    // 收到预期应答，重置重试计数
+    m_mismatchRetry = 0;
     cmdPool.erase(cmdPool.begin());
     if (cmdPool.size() > 0)
     {
